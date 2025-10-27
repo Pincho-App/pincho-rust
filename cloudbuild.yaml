@@ -1,0 +1,147 @@
+# Cloud Build configuration for WirePusher Rust SDK
+# Runs tests, code coverage checks, and builds the package
+
+steps:
+  # Step 1: Restore dependencies
+  - name: 'rust:1.83'
+    id: 'fetch'
+    entrypoint: 'cargo'
+    args:
+      - 'fetch'
+      - '--locked'
+
+  # Step 2: Build in release mode
+  - name: 'rust:1.83'
+    id: 'build'
+    entrypoint: 'cargo'
+    waitFor: ['fetch']
+    args:
+      - 'build'
+      - '--release'
+      - '--locked'
+
+  # Step 3: Run tests
+  - name: 'rust:1.83'
+    id: 'test'
+    entrypoint: 'cargo'
+    waitFor: ['build']
+    args:
+      - 'test'
+      - '--locked'
+
+  # Step 4: Check coverage with tarpaulin (90% threshold)
+  - name: 'rust:1.83'
+    id: 'coverage'
+    entrypoint: 'bash'
+    waitFor: ['test']
+    args:
+      - '-c'
+      - |
+        cargo install cargo-tarpaulin --locked
+        cargo tarpaulin --out Xml --output-dir ./coverage --locked
+
+        # Extract line coverage percentage
+        if [ -f coverage/cobertura.xml ]; then
+          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage/cobertura.xml | head -1)
+          COVERAGE_PCT=$(echo "$COVERAGE * 100" | bc)
+          echo "Line coverage: $COVERAGE_PCT%"
+
+          # Check if coverage meets threshold
+          if (( $(echo "$COVERAGE < 0.90" | bc -l) )); then
+            echo "ERROR: Coverage $COVERAGE_PCT% is below 90% threshold"
+            exit 1
+          fi
+
+          echo "Coverage threshold met (>= 90%)"
+        else
+          echo "ERROR: Coverage report not found"
+          exit 1
+        fi
+
+  # Step 5: Run clippy (linter)
+  - name: 'rust:1.83'
+    id: 'clippy'
+    entrypoint: 'bash'
+    waitFor: ['build']
+    args:
+      - '-c'
+      - |
+        rustup component add clippy
+        cargo clippy --all-targets --locked -- -D warnings
+
+  # Step 6: Check formatting
+  - name: 'rust:1.83'
+    id: 'fmt'
+    entrypoint: 'bash'
+    waitFor: ['fetch']
+    args:
+      - '-c'
+      - |
+        rustup component add rustfmt
+        cargo fmt -- --check
+
+  # Step 7: Build documentation
+  - name: 'rust:1.83'
+    id: 'docs'
+    entrypoint: 'cargo'
+    waitFor: ['build']
+    args:
+      - 'doc'
+      - '--no-deps'
+      - '--locked'
+
+  # Step 8: Package the crate
+  - name: 'rust:1.83'
+    id: 'package'
+    entrypoint: 'cargo'
+    waitFor: ['coverage', 'clippy', 'fmt']
+    args:
+      - 'package'
+      - '--locked'
+      - '--allow-dirty'
+
+  # Step 9: Publish to crates.io (ONLY on Git tags)
+  # Requires CRATES_IO_TOKEN secret
+  - name: 'rust:1.83'
+    id: 'publish'
+    entrypoint: 'bash'
+    waitFor: ['package']
+    secretEnv: ['CRATES_IO_TOKEN']
+    args:
+      - '-c'
+      - |
+        if [ -n "$TAG_NAME" ]; then
+          echo "Publishing version $TAG_NAME to crates.io..."
+          echo ""
+          echo "Crates.io publication requires:"
+          echo "1. Create account at https://crates.io/"
+          echo "2. Generate API token"
+          echo "3. Add token to Secret Manager (crates-io-token)"
+          echo "4. Run: cargo publish --token \$CRATES_IO_TOKEN"
+          echo ""
+          echo "Tag $TAG_NAME is valid and package is ready!"
+          ls -lh target/package/*.crate
+        else
+          echo "Skipping crates.io publish (not a tagged release)"
+          echo "To publish: git tag v1.0.0 && git push origin v1.0.0"
+        fi
+
+timeout: '600s'
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+# Artifacts to save
+artifacts:
+  objects:
+    location: 'gs://wirepusher-build-artifacts/rust-sdk/$BUILD_ID'
+    paths:
+      - 'target/package/*.crate'
+      - 'target/doc/**'
+      - 'coverage/*'
+
+# Secret Manager secrets
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/crates-io-token/versions/latest
+      env: 'CRATES_IO_TOKEN'
