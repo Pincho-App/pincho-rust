@@ -96,12 +96,14 @@
 
 // Module declarations
 mod client;
+mod encryption;
 mod error;
 mod notification;
 mod response;
 
 // Public re-exports
 pub use client::Client;
+pub use encryption::encrypt_text;
 pub use error::{Error, Result};
 pub use notification::{Notification, NotificationBuilder};
 pub use response::NotificationResponse;

@@ -9,6 +9,11 @@ use serde_json::json;
 /// The client is thread-safe and reuses HTTP connections via connection pooling.
 /// It's recommended to create a single client instance and reuse it across your application.
 ///
+/// # Deprecation Note
+///
+/// This client uses the v1 API with legacy `user_id` authentication. For new projects,
+/// consider using Firebase Auth tokens with the v2 API when available.
+///
 /// # Examples
 ///
 /// ```no_run
@@ -26,6 +31,8 @@ use serde_json::json;
 pub struct Client {
     http_client: reqwest::Client,
     token: String,
+    /// Legacy authentication - user ID (deprecated, use token-based auth for new projects)
+    #[deprecated(note = "Legacy authentication. Use token parameter instead with v2 API.")]
     user_id: String,
     base_url: String,
 }
@@ -40,6 +47,11 @@ impl Client {
     ///
     /// * `token` - Your WirePusher API token (starts with `wpt_`)
     /// * `user_id` - Your WirePusher user ID
+    ///
+    /// # Deprecation Warning
+    ///
+    /// The `user_id` parameter is legacy authentication. For new integrations, use Firebase Auth tokens
+    /// via the v2 API instead. This SDK currently only supports v1 API with user_id authentication.
     ///
     /// # Errors
     ///
@@ -90,8 +102,12 @@ impl Client {
     /// # Arguments
     ///
     /// * `token` - Your WirePusher API token
-    /// * `user_id` - Your WirePusher user ID
+    /// * `user_id` - Your WirePusher user ID (legacy authentication)
     /// * `base_url` - Custom base URL for the API
+    ///
+    /// # Deprecation Warning
+    ///
+    /// The `user_id` parameter is legacy authentication. Use token-based auth for new integrations.
     pub fn with_base_url(
         token: impl Into<String>,
         user_id: impl Into<String>,
@@ -174,13 +190,38 @@ impl Client {
     /// ```
     pub async fn send_notification(
         &self,
-        notification: Notification,
+        mut notification: Notification,
     ) -> Result<NotificationResponse> {
+        // Handle encryption if password is set
+        let message = if let Some(ref password) = notification.encryption_password {
+            // Generate random IV
+            use rand::Rng;
+            let mut iv = [0u8; 16];
+            rand::thread_rng().fill(&mut iv);
+
+            // Encrypt the message
+            let encrypted = crate::encryption::encrypt_text(&notification.message, password, &iv)?;
+
+            // Store IV in custom Base64 format
+            use base64::{engine::general_purpose::STANDARD, Engine as _};
+            let iv_base64 = STANDARD.encode(iv);
+            notification.message_iv = Some(
+                iv_base64
+                    .replace('+', "-")
+                    .replace('/', ".")
+                    .replace('=', "_"),
+            );
+
+            encrypted
+        } else {
+            notification.message.clone()
+        };
+
         // Build the request body
         let mut body = json!({
             "id": self.user_id,
             "title": notification.title,
-            "message": notification.message,
+            "message": message,
         });
 
         // Add optional fields
@@ -195,6 +236,9 @@ impl Client {
         }
         if let Some(action_url) = notification.action_url {
             body["action_url"] = json!(action_url);
+        }
+        if let Some(message_iv) = notification.message_iv {
+            body["message_iv"] = json!(message_iv);
         }
 
         // Send the request

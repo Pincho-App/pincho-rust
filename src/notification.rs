@@ -28,6 +28,15 @@ pub struct Notification {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "action_url")]
     pub action_url: Option<String>,
+
+    /// Encryption password (optional, will encrypt message field only)
+    #[serde(skip_serializing)]
+    pub(crate) encryption_password: Option<String>,
+
+    /// Random IV for encryption (optional, will be generated if encryption is used)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "message_iv")]
+    pub(crate) message_iv: Option<String>,
 }
 
 impl Notification {
@@ -40,6 +49,8 @@ impl Notification {
             tags: None,
             image_url: None,
             action_url: None,
+            encryption_password: None,
+            message_iv: None,
         }
     }
 
@@ -58,6 +69,7 @@ pub struct NotificationBuilder {
     tags: Option<Vec<String>>,
     image_url: Option<String>,
     action_url: Option<String>,
+    encryption_password: Option<String>,
 }
 
 impl NotificationBuilder {
@@ -105,6 +117,21 @@ impl NotificationBuilder {
         self
     }
 
+    /// Sets the encryption password (will encrypt message field only)
+    ///
+    /// When set, the message will be encrypted using AES-128-CBC with:
+    /// - SHA1-based key derivation
+    /// - Random 16-byte IV per message
+    /// - Custom Base64 encoding (+ → -, / → ., = → _)
+    /// - PKCS7 padding
+    ///
+    /// Note: Only the message field is encrypted. Title, type, imageURL,
+    /// actionURL, and tags remain unencrypted.
+    pub fn encryption_password(mut self, password: impl Into<String>) -> Self {
+        self.encryption_password = Some(password.into());
+        self
+    }
+
     /// Builds the notification, validating all fields
     pub fn build(self) -> Result<Notification> {
         let title = self
@@ -145,6 +172,8 @@ impl NotificationBuilder {
             tags: self.tags,
             image_url: self.image_url,
             action_url: self.action_url,
+            encryption_password: self.encryption_password,
+            message_iv: None, // Will be set during send if encryption is used
         })
     }
 }
