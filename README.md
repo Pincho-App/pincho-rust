@@ -38,7 +38,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_YOUR_TOKEN")?;
+    let client = Client::new("wpt_YOUR_TOKEN", "")?;
 
     client.send(
         "Deploy Complete",
@@ -60,7 +60,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_abc123xyz")?;
+    let client = Client::new("wpt_abc123xyz", "")?;
 
     let response = client.send(
         "Deploy Complete",
@@ -79,7 +79,7 @@ use wirepusher::{Client, Notification};
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_abc123xyz")?;
+    let client = Client::new("wpt_abc123xyz", "")?;
 
     let notification = Notification::builder()
         .title("Deploy Complete")
@@ -104,7 +104,7 @@ use wirepusher::Client;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("WIREPUSHER_TOKEN")?;
-    let client = Client::new(token)?;
+    let client = Client::new(token, "")?;
 
     client.send(
         "Deploy Complete",
@@ -133,7 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("WIREPUSHER_TOKEN")?;
     let password = env::var("WIREPUSHER_ENCRYPTION_PASSWORD")?;
 
-    let client = Client::new(token)?;
+    let client = Client::new(token, "")?;
 
     let notification = Notification::builder()
         .title("Security Alert")
@@ -158,11 +158,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 **Constructor:**
 ```rust
-Client::new(token: impl Into<String>) -> Result<Self>
+Client::new(token: impl Into<String>, user_id: impl Into<String>) -> Result<Self>
 ```
 
 **Parameters:**
 - `token` (required): Your WirePusher token (starts with `wpt_`)
+- `user_id` (required): User ID for authentication (use `""` for token-based auth)
 
 **Methods:**
 
@@ -246,7 +247,7 @@ use wirepusher::{Client, Error};
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new("wpt_token").unwrap();
+    let client = Client::new("wpt_token", "").unwrap();
 
     match client.send("Test", "Message").await {
         Ok(response) => println!("Success: {}", response.message),
@@ -274,7 +275,7 @@ use wirepusher::Client;
 
 async fn notify_deployment(version: &str, environment: &str) -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("WIREPUSHER_TOKEN")?;
-    let client = Client::new(token)?;
+    let client = Client::new(token, "")?;
 
     client.send(
         "Deploy Complete",
@@ -302,7 +303,7 @@ async fn check_server_health() -> Result<(), Box<dyn std::error::Error>> {
 
     if cpu_usage > 80.0 || memory_usage > 80.0 {
         let token = env::var("WIREPUSHER_TOKEN")?;
-        let client = Client::new(token)?;
+        let client = Client::new(token, "")?;
 
         let notification = Notification::builder()
             .title("Server Alert")
@@ -327,7 +328,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_token")?;
+    let client = Client::new("wpt_token", "")?;
 
     // Send multiple concurrent notifications
     let futures: Vec<_> = (0..10)
