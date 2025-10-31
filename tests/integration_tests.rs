@@ -19,7 +19,7 @@ async fn test_send_simple_notification_success() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let response = client.send("Test Title", "Test Message").await.unwrap();
 
@@ -41,7 +41,7 @@ async fn test_send_notification_with_all_options() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let notification = Notification::builder()
         .title("Deploy Complete")
@@ -69,7 +69,7 @@ async fn test_authentication_error() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("invalid_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("invalid_token", "test_device", &mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -89,7 +89,7 @@ async fn test_validation_error() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let result = client.send("", "").await;
 
@@ -109,7 +109,7 @@ async fn test_rate_limit_error() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -129,7 +129,7 @@ async fn test_forbidden_error() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -149,7 +149,7 @@ async fn test_not_found_error() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -169,7 +169,7 @@ async fn test_server_error() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -181,17 +181,17 @@ async fn test_server_error() {
 #[test]
 fn test_client_creation_validation() {
     // Empty token
-    let result = Client::new("", "user_id");
+    let result = Client::new("", "device_id");
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), Error::InvalidConfig(_)));
 
-    // Empty user ID
+    // Empty device ID
     let result = Client::new("token", "");
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), Error::InvalidConfig(_)));
 
     // Valid client
-    let result = Client::new("token", "user_id");
+    let result = Client::new("token", "device_id");
     assert!(result.is_ok());
 }
 
@@ -256,7 +256,7 @@ async fn test_concurrent_requests() {
         .mount(&mock_server)
         .await;
 
-    let client = Client::with_base_url("test_token", "test_user", &mock_server.uri()).unwrap();
+    let client = Client::with_base_url("test_token", "test_device", &mock_server.uri()).unwrap();
 
     // Send multiple concurrent requests
     let futures: Vec<_> = (0..10)

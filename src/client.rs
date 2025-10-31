@@ -11,7 +11,7 @@ use serde_json::json;
 ///
 /// # Deprecation Note
 ///
-/// This client uses the v1 API with legacy `user_id` authentication. For new projects,
+/// This client uses the v1 API with legacy `device_id` authentication. For new projects,
 /// consider using Firebase Auth tokens with the v2 API when available.
 ///
 /// # Examples
@@ -21,7 +21,7 @@ use serde_json::json;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), wirepusher::Error> {
-///     let client = Client::new("wpt_your_token", "your_user_id")?;
+///     let client = Client::new("wpt_your_token", "your_device_id")?;
 ///     let response = client.send("Hello", "World!").await?;
 ///     println!("Status: {}", response.status);
 ///     Ok(())
@@ -31,9 +31,9 @@ use serde_json::json;
 pub struct Client {
     http_client: reqwest::Client,
     token: String,
-    /// Legacy authentication - user ID (deprecated, use token-based auth for new projects)
+    /// Legacy authentication - device ID (deprecated, use token-based auth for new projects)
     #[deprecated(note = "Legacy authentication. Use token parameter instead with v2 API.")]
-    user_id: String,
+    device_id: String,
     base_url: String,
 }
 
@@ -46,18 +46,18 @@ impl Client {
     /// # Arguments
     ///
     /// * `token` - Your WirePusher API token (starts with `wpt_`)
-    /// * `user_id` - Your WirePusher user ID
+    /// * `device_id` - Your WirePusher device ID
     ///
     /// # Deprecation Warning
     ///
-    /// The `user_id` parameter is legacy authentication. For new integrations, use Firebase Auth tokens
-    /// via the v2 API instead. This SDK currently only supports v1 API with user_id authentication.
+    /// The `device_id` parameter is legacy authentication. For new integrations, use Firebase Auth tokens
+    /// via the v2 API instead. This SDK currently only supports v1 API with device_id authentication.
     ///
     /// # Errors
     ///
     /// Returns an error if:
     /// - Token is empty
-    /// - User ID is empty
+    /// - Device ID is empty
     /// - HTTP client cannot be created
     ///
     /// # Examples
@@ -66,21 +66,21 @@ impl Client {
     /// use wirepusher::Client;
     ///
     /// # fn main() -> Result<(), wirepusher::Error> {
-    /// let client = Client::new("wpt_your_token", "your_user_id")?;
+    /// let client = Client::new("wpt_your_token", "your_device_id")?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(token: impl Into<String>, user_id: impl Into<String>) -> Result<Self> {
+    pub fn new(token: impl Into<String>, device_id: impl Into<String>) -> Result<Self> {
         let token = token.into();
-        let user_id = user_id.into();
+        let device_id = device_id.into();
 
         if token.is_empty() {
             return Err(Error::InvalidConfig("token cannot be empty".to_string()));
         }
 
-        if user_id.is_empty() {
+        if device_id.is_empty() {
             return Err(Error::InvalidConfig(
-                "user_id cannot be empty".to_string(),
+                "device_id cannot be empty".to_string(),
             ));
         }
 
@@ -92,7 +92,7 @@ impl Client {
         Ok(Self {
             http_client,
             token,
-            user_id,
+            device_id,
             base_url: Self::DEFAULT_BASE_URL.to_string(),
         })
     }
@@ -102,18 +102,18 @@ impl Client {
     /// # Arguments
     ///
     /// * `token` - Your WirePusher API token
-    /// * `user_id` - Your WirePusher user ID (legacy authentication)
+    /// * `device_id` - Your WirePusher device ID (legacy authentication)
     /// * `base_url` - Custom base URL for the API
     ///
     /// # Deprecation Warning
     ///
-    /// The `user_id` parameter is legacy authentication. Use token-based auth for new integrations.
+    /// The `device_id` parameter is legacy authentication. Use token-based auth for new integrations.
     pub fn with_base_url(
         token: impl Into<String>,
-        user_id: impl Into<String>,
+        device_id: impl Into<String>,
         base_url: impl Into<String>,
     ) -> Result<Self> {
-        let mut client = Self::new(token, user_id)?;
+        let mut client = Self::new(token, device_id)?;
         client.base_url = base_url.into();
         Ok(client)
     }
@@ -139,7 +139,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), wirepusher::Error> {
-    ///     let client = Client::new("wpt_token", "user_id")?;
+    ///     let client = Client::new("wpt_token", "device_id")?;
     ///     let response = client.send("Build Complete", "v1.2.3 deployed").await?;
     ///     assert!(response.is_success());
     ///     Ok(())
@@ -174,7 +174,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), wirepusher::Error> {
-    ///     let client = Client::new("wpt_token", "user_id")?;
+    ///     let client = Client::new("wpt_token", "device_id")?;
     ///
     ///     let notification = Notification::builder()
     ///         .title("Deploy Complete")
@@ -219,7 +219,7 @@ impl Client {
 
         // Build the request body
         let mut body = json!({
-            "id": self.user_id,
+            "id": self.device_id,
             "title": notification.title,
             "message": message,
         });
@@ -294,28 +294,28 @@ mod tests {
 
     #[test]
     fn test_client_new() {
-        let client = Client::new("wpt_test_token", "test_user_id").unwrap();
+        let client = Client::new("wpt_test_token", "test_device_id").unwrap();
         assert_eq!(client.token, "wpt_test_token");
-        assert_eq!(client.user_id, "test_user_id");
+        assert_eq!(client.device_id, "test_device_id");
         assert_eq!(client.base_url, Client::DEFAULT_BASE_URL);
     }
 
     #[test]
     fn test_client_with_custom_base_url() {
         let client =
-            Client::with_base_url("wpt_token", "user_id", "https://custom.api.com/send").unwrap();
+            Client::with_base_url("wpt_token", "device_id", "https://custom.api.com/send").unwrap();
         assert_eq!(client.base_url, "https://custom.api.com/send");
     }
 
     #[test]
     fn test_client_empty_token() {
-        let result = Client::new("", "user_id");
+        let result = Client::new("", "device_id");
         assert!(result.is_err());
         assert!(matches!(result, Err(Error::InvalidConfig(_))));
     }
 
     #[test]
-    fn test_client_empty_user_id() {
+    fn test_client_empty_device_id() {
         let result = Client::new("wpt_token", "");
         assert!(result.is_err());
         assert!(matches!(result, Err(Error::InvalidConfig(_))));
@@ -323,21 +323,21 @@ mod tests {
 
     #[test]
     fn test_map_error_authentication() {
-        let client = Client::new("token", "user_id").unwrap();
+        let client = Client::new("token", "device_id").unwrap();
         let error = client.map_error(StatusCode::UNAUTHORIZED, "Invalid token".to_string());
         assert!(error.is_authentication_error());
     }
 
     #[test]
     fn test_map_error_validation() {
-        let client = Client::new("token", "user_id").unwrap();
+        let client = Client::new("token", "device_id").unwrap();
         let error = client.map_error(StatusCode::BAD_REQUEST, "Invalid params".to_string());
         assert!(error.is_validation_error());
     }
 
     #[test]
     fn test_map_error_rate_limit() {
-        let client = Client::new("token", "user_id").unwrap();
+        let client = Client::new("token", "device_id").unwrap();
         let error = client.map_error(StatusCode::TOO_MANY_REQUESTS, "Rate limit".to_string());
         assert!(error.is_rate_limit_error());
     }

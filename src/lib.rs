@@ -18,7 +18,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), wirepusher::Error> {
-//!     let client = Client::new("wpt_your_token", "your_user_id")?;
+//!     let client = Client::new("wpt_your_token", "your_device_id")?;
 //!
 //!     // Send a simple notification
 //!     let response = client.send("Build Complete", "v1.2.3 deployed successfully").await?;
@@ -38,7 +38,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), wirepusher::Error> {
-//!     let client = Client::new("wpt_your_token", "your_user_id")?;
+//!     let client = Client::new("wpt_your_token", "your_device_id")?;
 //!
 //!     // Build a notification with all options
 //!     let notification = Notification::builder()
@@ -64,7 +64,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let client = Client::new("wpt_token", "user_id").unwrap();
+//!     let client = Client::new("wpt_token", "device_id").unwrap();
 //!
 //!     match client.send("Test", "Message").await {
 //!         Ok(response) => println!("Success: {}", response.message),

@@ -6,11 +6,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get credentials from environment variables
     let token = env::var("WIREPUSHER_TOKEN")
         .expect("WIREPUSHER_TOKEN environment variable not set");
-    let user_id = env::var("WIREPUSHER_USER_ID")
-        .expect("WIREPUSHER_USER_ID environment variable not set");
+    let device_id = env::var("WIREPUSHER_DEVICE_ID")
+        .expect("WIREPUSHER_DEVICE_ID environment variable not set");
 
     // Create a WirePusher client
-    let client = Client::new(token, user_id)?;
+    let client = Client::new(token, device_id)?;
 
     // Build a notification with all options
     println!("Building advanced notification...");
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(Error::Authentication { message, status_code }) => {
             eprintln!("✗ Authentication error (HTTP {}):", status_code);
             eprintln!("  {}", message);
-            eprintln!("  Check your WIREPUSHER_TOKEN and WIREPUSHER_USER_ID");
+            eprintln!("  Check your WIREPUSHER_TOKEN and WIREPUSHER_DEVICE_ID");
         }
         Err(Error::Validation { message, status_code }) => {
             eprintln!("✗ Validation error (HTTP {}):", status_code);

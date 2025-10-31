@@ -38,7 +38,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_YOUR_TOKEN", "")?;
+    let client = Client::new("wpt_YOUR_TOKEN", "YOUR_DEVICE_ID")?;
 
     client.send(
         "Deploy Complete",
@@ -49,7 +49,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 }
 ```
 
-**Get your token:** Open app → Settings → Help → copy token
+**Get your credentials:** Open app → Settings → Help → copy token and device ID
 
 ## Usage
 
@@ -60,7 +60,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_abc123xyz", "")?;
+    let client = Client::new("wpt_abc123xyz", "your_device_id")?;
 
     let response = client.send(
         "Deploy Complete",
@@ -79,7 +79,7 @@ use wirepusher::{Client, Notification};
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_abc123xyz", "")?;
+    let client = Client::new("wpt_abc123xyz", "your_device_id")?;
 
     let notification = Notification::builder()
         .title("Deploy Complete")
@@ -104,7 +104,8 @@ use wirepusher::Client;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("WIREPUSHER_TOKEN")?;
-    let client = Client::new(token, "")?;
+    let device_id = env::var("WIREPUSHER_DEVICE_ID")?;
+    let client = Client::new(token, device_id)?;
 
     client.send(
         "Deploy Complete",
@@ -131,9 +132,10 @@ use wirepusher::{Client, Notification};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("WIREPUSHER_TOKEN")?;
+    let device_id = env::var("WIREPUSHER_DEVICE_ID")?;
     let password = env::var("WIREPUSHER_ENCRYPTION_PASSWORD")?;
 
-    let client = Client::new(token, "")?;
+    let client = Client::new(token, device_id)?;
 
     let notification = Notification::builder()
         .title("Security Alert")
@@ -158,12 +160,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 **Constructor:**
 ```rust
-Client::new(token: impl Into<String>, user_id: impl Into<String>) -> Result<Self>
+Client::new(token: impl Into<String>, device_id: impl Into<String>) -> Result<Self>
 ```
 
 **Parameters:**
 - `token` (required): Your WirePusher token (starts with `wpt_`)
-- `user_id` (required): User ID for authentication (use `""` for token-based auth)
+- `device_id` (required): Your device ID for identification
 
 **Methods:**
 
@@ -247,7 +249,7 @@ use wirepusher::{Client, Error};
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new("wpt_token", "").unwrap();
+    let client = Client::new("wpt_token", "device_id").unwrap();
 
     match client.send("Test", "Message").await {
         Ok(response) => println!("Success: {}", response.message),
@@ -275,7 +277,8 @@ use wirepusher::Client;
 
 async fn notify_deployment(version: &str, environment: &str) -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("WIREPUSHER_TOKEN")?;
-    let client = Client::new(token, "")?;
+    let device_id = env::var("WIREPUSHER_DEVICE_ID")?;
+    let client = Client::new(token, device_id)?;
 
     client.send(
         "Deploy Complete",
@@ -303,7 +306,8 @@ async fn check_server_health() -> Result<(), Box<dyn std::error::Error>> {
 
     if cpu_usage > 80.0 || memory_usage > 80.0 {
         let token = env::var("WIREPUSHER_TOKEN")?;
-        let client = Client::new(token, "")?;
+        let device_id = env::var("WIREPUSHER_DEVICE_ID")?;
+        let client = Client::new(token, device_id)?;
 
         let notification = Notification::builder()
             .title("Server Alert")
@@ -328,7 +332,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_token", "")?;
+    let client = Client::new("wpt_token", "device_id")?;
 
     // Send multiple concurrent notifications
     let futures: Vec<_> = (0..10)
@@ -388,6 +392,7 @@ cargo tarpaulin --out Html --output-dir coverage
 ```bash
 # Set credentials
 export WIREPUSHER_TOKEN="wpt_YOUR_TOKEN"
+export WIREPUSHER_DEVICE_ID="YOUR_DEVICE_ID"
 
 # Run examples
 cargo run --example simple
