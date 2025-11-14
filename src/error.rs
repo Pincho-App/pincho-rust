@@ -3,7 +3,7 @@ use thiserror::Error;
 /// Result type for WirePusher operations
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Main error type for the WirePusher SDK
+/// Main error type for the WirePusher Client Library
 #[derive(Error, Debug)]
 pub enum Error {
     /// Authentication failed (401, 403)

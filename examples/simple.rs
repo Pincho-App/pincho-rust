@@ -15,7 +15,7 @@ async fn main() -> Result<(), wirepusher::Error> {
     // Send a simple notification
     println!("Sending simple notification...");
     let response = client
-        .send("Hello from Rust!", "This is a test notification from the Rust SDK")
+        .send("Hello from Rust!", "This is a test notification from the Rust Client Library")
         .await?;
 
     println!("Response status: {}", response.status);

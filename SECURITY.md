@@ -10,7 +10,7 @@ We release patches for security vulnerabilities. Which versions are eligible for
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within the WirePusher Rust SDK, please send an email to security@wirepusher.dev. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within the WirePusher Rust Client Library, please send an email to security@wirepusher.dev. All security vulnerabilities will be promptly addressed.
 
 **Please do not report security vulnerabilities through public GitHub/GitLab issues.**
 

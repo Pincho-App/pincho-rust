@@ -1,6 +1,6 @@
-# Contributing to WirePusher Rust SDK
+# Contributing to WirePusher Rust Client Library
 
-Thank you for your interest in contributing to the WirePusher Rust SDK! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to the WirePusher Rust Client Library! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -24,7 +24,7 @@ This project adheres to a Code of Conduct. By participating, you are expected to
    ```
 3. Add upstream remote:
    ```bash
-   git remote add upstream https://gitlab.com/wirepusher/rust-sdk.git
+   git remote add upstream https://gitlab.com/wirepusher/wirepusher-rust.git
    ```
 4. Install dependencies:
    ```bash

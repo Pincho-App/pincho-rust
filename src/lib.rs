@@ -1,6 +1,6 @@
-//! # WirePusher Rust SDK
+//! # WirePusher Rust Client Library
 //!
-//! Official Rust SDK for [WirePusher](https://wirepusher.dev) - Send push notifications to your mobile devices.
+//! Official Rust Client Library for [WirePusher](https://wirepusher.dev) - Send push notifications to your mobile devices.
 //!
 //! ## Features
 //!
@@ -91,8 +91,8 @@
 //!
 //! - [WirePusher Website](https://wirepusher.dev)
 //! - [API Documentation](https://wirepusher.dev/api)
-//! - [GitLab Repository](https://gitlab.com/wirepusher/rust-sdk)
-//! - [Issue Tracker](https://gitlab.com/wirepusher/rust-sdk/-/issues)
+//! - [GitLab Repository](https://gitlab.com/wirepusher/wirepusher-rust)
+//! - [Issue Tracker](https://gitlab.com/wirepusher/wirepusher-rust/-/issues)
 
 // Module declarations
 mod client;

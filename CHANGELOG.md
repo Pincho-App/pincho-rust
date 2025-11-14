@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-10-26
 
 ### Added
-- Initial release of WirePusher Rust SDK
+- Initial release of WirePusher Rust Client Library
 - `Client` struct with async `send()` and `send_notification()` methods
 - Full async/await support with tokio
 - Type-safe builder pattern for `Notification`
@@ -56,5 +56,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - tokio-test 0.4 (testing utilities)
 - futures 0.3 (concurrent testing)
 
-[Unreleased]: https://gitlab.com/wirepusher/rust-sdk/-/compare/v1.0.0...main
-[1.0.0]: https://gitlab.com/wirepusher/rust-sdk/-/tags/v1.0.0
+[Unreleased]: https://gitlab.com/wirepusher/wirepusher-rust/-/compare/v1.0.0...main
+[1.0.0]: https://gitlab.com/wirepusher/wirepusher-rust/-/tags/v1.0.0

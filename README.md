@@ -1,10 +1,10 @@
-# WirePusher Rust SDK
+# WirePusher Rust Client Library
 
 [![Crates.io](https://img.shields.io/crates/v/wirepusher.svg)](https://crates.io/crates/wirepusher)
 [![Documentation](https://docs.rs/wirepusher/badge.svg)](https://docs.rs/wirepusher)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Official Rust SDK for [WirePusher](https://wirepusher.dev) push notifications.
+Official Rust Client Library for [WirePusher](https://wirepusher.dev) push notifications.
 
 ## Features
 
@@ -366,7 +366,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/wirepusher/rust-sdk.git
+git clone https://gitlab.com/wirepusher/wirepusher-rust.git
 cd rust-sdk
 
 # Build
@@ -413,8 +413,8 @@ cargo doc --open
 ## Links
 
 - **Documentation**: https://docs.rs/wirepusher
-- **Repository**: https://gitlab.com/wirepusher/rust-sdk
-- **Issues**: https://gitlab.com/wirepusher/rust-sdk/-/issues
+- **Repository**: https://gitlab.com/wirepusher/wirepusher-rust
+- **Issues**: https://gitlab.com/wirepusher/wirepusher-rust/-/issues
 - **Crates.io**: https://crates.io/crates/wirepusher
 
 ## License
