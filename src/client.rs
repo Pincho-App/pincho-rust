@@ -76,7 +76,7 @@ impl Client {
     /// use wirepusher::Client;
     ///
     /// # fn main() -> Result<(), wirepusher::Error> {
-    /// let client = Client::new("wpt_your_token", "your_device_id")?;
+    /// let client = Client::new("abc12345", "your_device_id")?;
     /// # Ok(())
     /// # }
     /// ```

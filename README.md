@@ -460,7 +460,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 4. **Test with minimal example:**
    ```rust
    // Simplest possible test
-   let client = Client::new("wpt_token", "device_id")?;
+   let client = Client::new("abc12345", "device_id")?;
    client.send("Test", "Message").await?;
    ```
 
