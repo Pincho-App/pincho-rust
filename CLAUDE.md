@@ -143,7 +143,7 @@ Simple constructor-based configuration:
 
 ```rust
 // Required parameters
-let client = Client::new("wpt_abc12345", "device_id")?;
+let client = Client::new("abc12345", "device_id")?;
 
 // Client uses sensible defaults:
 // - Timeout: 30 seconds
@@ -259,7 +259,7 @@ Example:
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), wirepusher::Error> {
-///     let client = Client::new("wpt_token", "device_id")?;
+///     let client = Client::new("abc12345", "device_id")?;
 ///     client.send("Title", "Message").await?;
 ///     Ok(())
 /// }
@@ -320,7 +320,7 @@ Token-based only:
 **Send request:**
 ```json
 {
-  "token": "wpt_abc12345",
+  "token": "abc12345",
   "device_id": "your_device_id",
   "title": "Deploy Complete",
   "message": "v1.2.3 deployed",

@@ -67,7 +67,7 @@ When using the WirePusher Rust Client Library:
 
 ```rust
 // ❌ Bad - Hardcoded credentials
-let client = Client::new("wpt_abc12345", "device_id")?;
+let client = Client::new("abc12345", "device_id")?;
 
 // ✅ Good - Environment variables
 use std::env;

@@ -46,7 +46,7 @@ cargo clippy -- -D warnings
 ```rust
 use wirepusher::{Client, Notification};
 
-let client = Client::new("wpt_abc123", "device_id").unwrap();
+let client = Client::new("abc12345", "device_id").unwrap();
 let notification = Notification::builder()
     .title("Test")
     .message("Special: ñ € 中")

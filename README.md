@@ -38,7 +38,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_YOUR_TOKEN", "YOUR_DEVICE_ID")?;
+    let client = Client::new("abc12345", "YOUR_DEVICE_ID")?;
 
     client.send(
         "Deploy Complete",
@@ -60,7 +60,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_abc123xyz", "your_device_id")?;
+    let client = Client::new("abc12345", "your_device_id")?;
 
     let response = client.send(
         "Deploy Complete",
@@ -79,7 +79,7 @@ use wirepusher::{Client, Notification};
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_abc123xyz", "your_device_id")?;
+    let client = Client::new("abc12345", "your_device_id")?;
 
     let notification = Notification::builder()
         .title("Deploy Complete")
@@ -164,7 +164,7 @@ Client::new(token: impl Into<String>, device_id: impl Into<String>) -> Result<Se
 ```
 
 **Parameters:**
-- `token` (required): Your WirePusher token (starts with `wpt_`)
+- `token` (required): Your WirePusher token
 - `device_id` (required): Your device ID for identification
 
 **Methods:**
@@ -249,7 +249,7 @@ use wirepusher::{Client, Error};
 
 #[tokio::main]
 async fn main() {
-    let client = Client::new("wpt_token", "device_id").unwrap();
+    let client = Client::new("abc12345", "device_id").unwrap();
 
     match client.send("Test", "Message").await {
         Ok(response) => println!("Success: {}", response.message),
@@ -332,7 +332,7 @@ use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    let client = Client::new("wpt_token", "device_id")?;
+    let client = Client::new("abc12345", "device_id")?;
 
     // Send multiple concurrent notifications
     let futures: Vec<_> = (0..10)
@@ -369,7 +369,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 **Error:** `Authentication { message: "Invalid token", status_code: 401 }`
 
 **Solutions:**
-- Verify your token starts with `wpt_`
+- Verify your token is correct
 - Check that your token hasn't expired or been revoked
 - Ensure you're using the correct token from Settings → Help in the app
 - Verify the device ID matches your current device
@@ -502,7 +502,7 @@ cargo tarpaulin --out Html --output-dir coverage
 
 ```bash
 # Set credentials
-export WIREPUSHER_TOKEN="wpt_YOUR_TOKEN"
+export WIREPUSHER_TOKEN="abc12345"
 export WIREPUSHER_DEVICE_ID="YOUR_DEVICE_ID"
 
 # Run examples

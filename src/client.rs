@@ -21,7 +21,7 @@ use serde_json::json;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), wirepusher::Error> {
-///     let client = Client::new("wpt_your_token", "your_device_id")?;
+///     let client = Client::new("abc12345", "your_device_id")?;
 ///     let response = client.send("Hello", "World!").await?;
 ///     println!("Status: {}", response.status);
 ///     Ok(())
@@ -54,7 +54,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `token` - Your WirePusher API token (starts with `wpt_`)
+    /// * `token` - Your WirePusher API token
     /// * `device_id` - Your WirePusher device ID (required for v1 API)
     ///
     /// # Migration Note
@@ -149,7 +149,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), wirepusher::Error> {
-    ///     let client = Client::new("wpt_token", "device_id")?;
+    ///     let client = Client::new("abc12345", "device_id")?;
     ///     let response = client.send("Build Complete", "v1.2.3 deployed").await?;
     ///     assert!(response.is_success());
     ///     Ok(())
@@ -184,7 +184,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), wirepusher::Error> {
-    ///     let client = Client::new("wpt_token", "device_id")?;
+    ///     let client = Client::new("abc12345", "device_id")?;
     ///
     ///     let notification = Notification::builder()
     ///         .title("Deploy Complete")
@@ -331,8 +331,8 @@ mod tests {
 
     #[test]
     fn test_client_new() {
-        let client = Client::new("wpt_test_token", "test_device_id").unwrap();
-        assert_eq!(client.token, "wpt_test_token");
+        let client = Client::new("abc12345", "test_device_id").unwrap();
+        assert_eq!(client.token, "abc12345");
         assert_eq!(client.device_id, "test_device_id");
         assert_eq!(client.base_url, Client::DEFAULT_BASE_URL);
     }
@@ -340,7 +340,7 @@ mod tests {
     #[test]
     fn test_client_with_custom_base_url() {
         let client =
-            Client::with_base_url("wpt_token", "device_id", "https://custom.api.com/send").unwrap();
+            Client::with_base_url("abc12345", "device_id", "https://custom.api.com/send").unwrap();
         assert_eq!(client.base_url, "https://custom.api.com/send");
     }
 
@@ -353,7 +353,7 @@ mod tests {
 
     #[test]
     fn test_client_empty_device_id() {
-        let result = Client::new("wpt_token", "");
+        let result = Client::new("abc12345", "");
         assert!(result.is_err());
         assert!(matches!(result, Err(Error::InvalidConfig(_))));
     }
