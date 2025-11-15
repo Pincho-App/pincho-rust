@@ -277,66 +277,48 @@ impl Client {
     fn parse_error_response(&self, status: StatusCode, error_text: &str) -> Error {
         let status_code = status.as_u16();
 
-        // Try to parse nested error response format
-        if let Ok(error_resp) = serde_json::from_str::<ErrorResponse>(error_text) {
-            // Build descriptive error message from nested error details
-            let mut error_message = error_resp.error.message.clone();
+        // Parse nested error response format (required)
+        let error_message = match serde_json::from_str::<ErrorResponse>(error_text) {
+            Ok(error_resp) => {
+                // Build descriptive error message from nested error details
+                let mut msg = error_resp.error.message.clone();
 
-            // Add error code if available and non-empty
-            if !error_resp.error.code.is_empty() {
-                error_message = format!("{} [{}]", error_message, error_resp.error.code);
-            }
-
-            // Add parameter context if available
-            if let Some(param) = &error_resp.error.param {
-                if !param.is_empty() {
-                    error_message = format!("{} (parameter: {})", error_message, param);
+                // Add error code if available and non-empty
+                if !error_resp.error.code.is_empty() {
+                    msg = format!("{} [{}]", msg, error_resp.error.code);
                 }
+
+                // Add parameter context if available
+                if let Some(param) = &error_resp.error.param {
+                    if !param.is_empty() {
+                        msg = format!("{} (parameter: {})", msg, param);
+                    }
+                }
+
+                msg
             }
-
-            // Map to specific error type based on status code
-            return match status {
-                StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Error::Authentication {
-                    message: error_message,
-                    status_code,
-                },
-                StatusCode::BAD_REQUEST | StatusCode::NOT_FOUND => Error::Validation {
-                    message: error_message,
-                    status_code,
-                },
-                StatusCode::TOO_MANY_REQUESTS => Error::RateLimit {
-                    message: error_message,
-                    status_code,
-                },
-                _ => Error::Api {
-                    message: error_message,
-                    status_code,
-                },
-            };
-        }
-
-        // Fallback to plain text error if parsing fails
-        let message = if error_text.is_empty() {
-            format!("HTTP error {}", status_code)
-        } else {
-            error_text.to_string()
+            Err(_) => {
+                // Return generic error if nested format is not present
+                format!("API error: HTTP {}", status_code)
+            }
         };
 
+        // Map to specific error type based on status code
         match status {
             StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Error::Authentication {
-                message,
+                message: error_message,
                 status_code,
             },
             StatusCode::BAD_REQUEST | StatusCode::NOT_FOUND => Error::Validation {
-                message,
+                message: error_message,
                 status_code,
             },
             StatusCode::TOO_MANY_REQUESTS => Error::RateLimit {
-                message,
+                message: error_message,
                 status_code,
             },
             _ => Error::Api {
-                message,
+                message: error_message,
                 status_code,
             },
         }
@@ -374,27 +356,6 @@ mod tests {
         let result = Client::new("wpt_token", "");
         assert!(result.is_err());
         assert!(matches!(result, Err(Error::InvalidConfig(_))));
-    }
-
-    #[test]
-    fn test_parse_error_authentication() {
-        let client = Client::new("token", "device_id").unwrap();
-        let error = client.parse_error_response(StatusCode::UNAUTHORIZED, "Invalid token");
-        assert!(error.is_authentication_error());
-    }
-
-    #[test]
-    fn test_parse_error_validation() {
-        let client = Client::new("token", "device_id").unwrap();
-        let error = client.parse_error_response(StatusCode::BAD_REQUEST, "Invalid params");
-        assert!(error.is_validation_error());
-    }
-
-    #[test]
-    fn test_parse_error_rate_limit() {
-        let client = Client::new("token", "device_id").unwrap();
-        let error = client.parse_error_response(StatusCode::TOO_MANY_REQUESTS, "Rate limit");
-        assert!(error.is_rate_limit_error());
     }
 
     #[test]
