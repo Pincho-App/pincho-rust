@@ -31,8 +31,17 @@ use serde_json::json;
 pub struct Client {
     http_client: reqwest::Client,
     token: String,
-    /// Legacy authentication - device ID (deprecated, use token-based auth for new projects)
-    #[deprecated(note = "Legacy authentication. Use token parameter instead with v2 API.")]
+    /// Device ID for authentication (currently required for v1 API)
+    ///
+    /// # Migration Note
+    ///
+    /// This field is used with the v1 API. Future versions will support Firebase Auth tokens
+    /// via a v2 API endpoint. Until v2 API is released, this field remains required.
+    ///
+    /// To prepare for migration:
+    /// 1. Keep using this field with v1 API (current)
+    /// 2. When v2 API is available, migrate to token-only authentication
+    /// 3. See migration guide at: https://wirepusher.dev/docs/migration
     device_id: String,
     base_url: String,
 }
@@ -46,12 +55,13 @@ impl Client {
     /// # Arguments
     ///
     /// * `token` - Your WirePusher API token (starts with `wpt_`)
-    /// * `device_id` - Your WirePusher device ID
+    /// * `device_id` - Your WirePusher device ID (required for v1 API)
     ///
-    /// # Deprecation Warning
+    /// # Migration Note
     ///
-    /// The `device_id` parameter is legacy authentication. For new integrations, use Firebase Auth tokens
-    /// via the v2 API instead. This SDK currently only supports v1 API with device_id authentication.
+    /// This constructor uses the v1 API which requires both token and device_id.
+    /// A future v2 API will support token-only authentication with Firebase Auth.
+    /// For migration guidance when v2 is released, see: https://wirepusher.dev/docs/migration
     ///
     /// # Errors
     ///
@@ -102,12 +112,12 @@ impl Client {
     /// # Arguments
     ///
     /// * `token` - Your WirePusher API token
-    /// * `device_id` - Your WirePusher device ID (legacy authentication)
+    /// * `device_id` - Your WirePusher device ID (required for v1 API)
     /// * `base_url` - Custom base URL for the API
     ///
-    /// # Deprecation Warning
+    /// # Migration Note
     ///
-    /// The `device_id` parameter is legacy authentication. Use token-based auth for new integrations.
+    /// Uses v1 API with device_id authentication. See [`Client::new`] for migration details.
     pub fn with_base_url(
         token: impl Into<String>,
         device_id: impl Into<String>,
