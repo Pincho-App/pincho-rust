@@ -20,7 +20,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-wirepusher = "1.0"
+wirepusher = "1.0.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -360,6 +360,117 @@ async fn main() -> Result<(), wirepusher::Error> {
 }
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+#### Authentication Errors (401/403)
+
+**Error:** `Authentication { message: "Invalid token", status_code: 401 }`
+
+**Solutions:**
+- Verify your token starts with `wpt_`
+- Check that your token hasn't expired or been revoked
+- Ensure you're using the correct token from Settings → Help in the app
+- Verify the device ID matches your current device
+
+#### Validation Errors (400/404)
+
+**Error:** `Validation { message: "Invalid parameters", status_code: 400 }`
+
+**Solutions:**
+- Ensure title is not empty and ≤256 characters
+- Ensure message is not empty and ≤4096 characters
+- Verify URLs (image_url, action_url) are valid and well-formed
+- Check tags: max 10 tags, each ≤50 characters, no empty tags
+- Confirm notification type matches configured types (if using encryption)
+
+#### Rate Limit Errors (429)
+
+**Error:** `RateLimit { message: "Rate limit exceeded", status_code: 429 }`
+
+**Solutions:**
+- Implement exponential backoff between requests
+- Reduce notification frequency
+- Contact support for rate limit increase if needed
+
+#### Connection/Timeout Errors
+
+**Error:** `Request(reqwest::Error { kind: Timeout, ... })`
+
+**Solutions:**
+- Check your internet connection
+- Verify firewall isn't blocking HTTPS to wirepusher.com
+- Increase timeout if needed (default is 30 seconds)
+- Check WirePusher service status at https://status.wirepusher.dev
+
+#### Encryption Issues
+
+**Symptom:** Message appears garbled or empty in notification
+
+**Solutions:**
+- Ensure the notification type in the app has encryption enabled
+- Verify the password matches exactly (case-sensitive)
+- Confirm the type parameter matches the configured type name
+- Check that encryption_password is set before calling build()
+
+#### URL Validation Errors
+
+**Error:** `BuilderValidation("invalid image_url: ...")`
+
+**Solutions:**
+- Ensure URLs start with `http://` or `https://`
+- Check for typos in the URL
+- Verify the URL is properly encoded
+- Use absolute URLs, not relative paths
+
+#### Tag Validation Errors
+
+**Error:** `BuilderValidation("tag at index 0 exceeds 50 characters")`
+
+**Solutions:**
+- Keep individual tags under 50 characters
+- Use abbreviations or shorter identifiers
+- Split long tags into multiple shorter tags
+- Remove empty tags from the array
+
+### Debugging Tips
+
+1. **Enable verbose logging:**
+   ```rust
+   env_logger::init(); // Add this to see detailed HTTP logs
+   ```
+
+2. **Check response details:**
+   ```rust
+   match client.send("Title", "Message").await {
+       Ok(response) => println!("Response: {:?}", response),
+       Err(e) => eprintln!("Error: {:?}", e),
+   }
+   ```
+
+3. **Validate notifications before sending:**
+   ```rust
+   let notification = Notification::builder()
+       .title("Test")
+       .message("Message")
+       .build()?; // Catches validation errors early
+   ```
+
+4. **Test with minimal example:**
+   ```rust
+   // Simplest possible test
+   let client = Client::new("wpt_token", "device_id")?;
+   client.send("Test", "Message").await?;
+   ```
+
+### Getting Help
+
+- **Documentation:** https://docs.rs/wirepusher
+- **Issues:** https://gitlab.com/wirepusher/wirepusher-rust/-/issues
+- **Support:** support@wirepusher.dev
+- **Status:** https://status.wirepusher.dev
+
 ## Development
 
 ### Setup
@@ -367,7 +478,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 ```bash
 # Clone repository
 git clone https://gitlab.com/wirepusher/wirepusher-rust.git
-cd rust-sdk
+cd wirepusher-rust
 
 # Build
 cargo build
