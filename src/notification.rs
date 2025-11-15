@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 /// A notification to be sent via WirePusher
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,13 +92,13 @@ impl NotificationBuilder {
         self
     }
 
-    /// Sets tags for filtering (max 10 tags)
+    /// Sets tags for filtering (max 10 tags, max 50 characters per tag)
     pub fn tags(mut self, tags: Vec<String>) -> Self {
         self.tags = Some(tags);
         self
     }
 
-    /// Adds a single tag
+    /// Adds a single tag (max 50 characters)
     pub fn add_tag(mut self, tag: impl Into<String>) -> Self {
         self.tags
             .get_or_insert_with(Vec::new)
@@ -105,13 +106,13 @@ impl NotificationBuilder {
         self
     }
 
-    /// Sets the image URL to display
+    /// Sets the image URL to display (must be a valid URL)
     pub fn image_url(mut self, url: impl Into<String>) -> Self {
         self.image_url = Some(url.into());
         self
     }
 
-    /// Sets the action URL to open when tapped
+    /// Sets the action URL to open when tapped (must be a valid URL)
     pub fn action_url(mut self, url: impl Into<String>) -> Self {
         self.action_url = Some(url.into());
         self
@@ -156,13 +157,41 @@ impl NotificationBuilder {
             ));
         }
 
-        // Validate tags count
+        // Validate tags count and individual tag lengths
         if let Some(ref tags) = self.tags {
             if tags.len() > 10 {
                 return Err(Error::BuilderValidation(
                     "maximum 10 tags allowed".to_string(),
                 ));
             }
+
+            // Validate individual tag length (max 50 characters per tag)
+            for (index, tag) in tags.iter().enumerate() {
+                if tag.is_empty() {
+                    return Err(Error::BuilderValidation(
+                        format!("tag at index {} cannot be empty", index),
+                    ));
+                }
+                if tag.len() > 50 {
+                    return Err(Error::BuilderValidation(
+                        format!("tag at index {} exceeds 50 characters (length: {})", index, tag.len()),
+                    ));
+                }
+            }
+        }
+
+        // Validate image_url is a valid URL
+        if let Some(ref image_url) = self.image_url {
+            Url::parse(image_url).map_err(|e| {
+                Error::BuilderValidation(format!("invalid image_url: {}", e))
+            })?;
+        }
+
+        // Validate action_url is a valid URL
+        if let Some(ref action_url) = self.action_url {
+            Url::parse(action_url).map_err(|e| {
+                Error::BuilderValidation(format!("invalid action_url: {}", e))
+            })?;
         }
 
         Ok(Notification {
@@ -320,5 +349,115 @@ mod tests {
 
         let json = serde_json::to_string(&notification).unwrap();
         assert!(json.contains("\"type\":\"info\""));
+    }
+
+    #[test]
+    fn test_valid_image_url() {
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .image_url("https://example.com/image.png")
+            .build();
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_image_url() {
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .image_url("not-a-valid-url")
+            .build();
+
+        assert!(result.is_err());
+        assert!(matches!(result, Err(Error::BuilderValidation(_))));
+        if let Err(Error::BuilderValidation(msg)) = result {
+            assert!(msg.contains("invalid image_url"));
+        }
+    }
+
+    #[test]
+    fn test_valid_action_url() {
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .action_url("https://example.com/action")
+            .build();
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_invalid_action_url() {
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .action_url("not a url at all")
+            .build();
+
+        assert!(result.is_err());
+        assert!(matches!(result, Err(Error::BuilderValidation(_))));
+        if let Err(Error::BuilderValidation(msg)) = result {
+            assert!(msg.contains("invalid action_url"));
+        }
+    }
+
+    #[test]
+    fn test_tag_too_long() {
+        let long_tag = "a".repeat(51);
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .tags(vec![long_tag])
+            .build();
+
+        assert!(result.is_err());
+        assert!(matches!(result, Err(Error::BuilderValidation(_))));
+        if let Err(Error::BuilderValidation(msg)) = result {
+            assert!(msg.contains("exceeds 50 characters"));
+        }
+    }
+
+    #[test]
+    fn test_empty_tag() {
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .tags(vec!["valid".to_string(), "".to_string()])
+            .build();
+
+        assert!(result.is_err());
+        assert!(matches!(result, Err(Error::BuilderValidation(_))));
+        if let Err(Error::BuilderValidation(msg)) = result {
+            assert!(msg.contains("cannot be empty"));
+        }
+    }
+
+    #[test]
+    fn test_valid_tags_at_max_length() {
+        let max_length_tag = "a".repeat(50);
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .tags(vec![max_length_tag])
+            .build();
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_multiple_valid_tags() {
+        let result = Notification::builder()
+            .title("Test")
+            .message("Message")
+            .tags(vec![
+                "tag1".to_string(),
+                "tag2".to_string(),
+                "a".repeat(50),
+            ])
+            .build();
+
+        assert!(result.is_ok());
     }
 }
