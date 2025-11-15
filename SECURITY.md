@@ -2,57 +2,216 @@
 
 ## Supported Versions
 
-We release patches for security vulnerabilities. Which versions are eligible for receiving such patches depends on the CVSS v3.0 Rating:
+We release patches for security vulnerabilities in the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
 | 1.x.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within the WirePusher Rust Client Library, please send an email to security@wirepusher.dev. All security vulnerabilities will be promptly addressed.
+The WirePusher team takes security bugs seriously. We appreciate your efforts to responsibly disclose your findings.
 
-**Please do not report security vulnerabilities through public GitHub/GitLab issues.**
+### How to Report
 
-When reporting a vulnerability, please include:
+**Please do NOT report security vulnerabilities through public GitLab issues.**
 
-- Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting, etc.)
-- Full paths of source file(s) related to the manifestation of the issue
-- The location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit it
+Instead, please report security vulnerabilities via email to:
 
-We will acknowledge receipt of your vulnerability report and send you regular updates about our progress. If you have suggestions for how to address the vulnerability, please include them in your report.
+**security@wirepusher.com**
 
-## Disclosure Policy
+### What to Include
 
-When we receive a security bug report, we will:
+To help us triage and fix the issue quickly, please include:
 
-1. Confirm the problem and determine the affected versions
-2. Audit code to find any similar problems
-3. Prepare fixes for all supported releases
-4. Release new versions as soon as possible
+1. **Type of vulnerability** (e.g., authentication bypass, injection, etc.)
+2. **Full paths** of source files related to the vulnerability
+3. **Location** of the affected source code (tag/branch/commit or direct URL)
+4. **Step-by-step instructions** to reproduce the issue
+5. **Proof-of-concept or exploit code** (if possible)
+6. **Impact** of the vulnerability (what an attacker could achieve)
+7. **Any mitigating factors** or workarounds you've identified
+
+### What to Expect
+
+After you submit a report:
+
+1. **Acknowledgment** - We'll acknowledge receipt within 48 hours
+2. **Assessment** - We'll assess the vulnerability and determine severity
+3. **Updates** - We'll provide regular updates (at least every 7 days)
+4. **Fix Timeline** - We aim to release fixes for:
+   - **Critical** vulnerabilities: Within 7 days
+   - **High** vulnerabilities: Within 14 days
+   - **Medium** vulnerabilities: Within 30 days
+   - **Low** vulnerabilities: Next regular release
+
+5. **Disclosure** - We'll coordinate with you on public disclosure timing
+6. **Credit** - We'll credit you in the security advisory (unless you prefer to remain anonymous)
 
 ## Security Best Practices
 
-When using this SDK:
+### For Users
 
-1. **Never hardcode credentials** - Use environment variables or secure configuration management
-2. **Keep dependencies updated** - Regularly update the SDK and its dependencies
-3. **Use HTTPS** - The SDK defaults to HTTPS for all API calls
-4. **Protect your API tokens** - Treat them like passwords
-5. **Use environment-specific tokens** - Don't use production tokens in development
-6. **Rotate tokens regularly** - Generate new tokens periodically
-7. **Monitor for suspicious activity** - Check your WirePusher dashboard regularly
+When using the WirePusher Rust Client Library:
 
-## Security Features
+1. **Keep the SDK updated** to the latest version
+2. **Never commit credentials** to version control
+3. **Use environment variables** for sensitive configuration
+4. **Validate input** before sending to the SDK
+5. **Handle errors gracefully** without exposing sensitive information
+6. **Use HTTPS** for all network communication
+7. **Limit token scope** to minimum required permissions
 
-This SDK includes:
+### Credential Management
 
-- TLS/SSL encryption for all API communications
-- No logging of sensitive data (tokens, user IDs)
-- Connection timeout protection (30 seconds default)
-- Comprehensive error handling without exposing internal details
-- Type-safe API to prevent common programming errors
+```rust
+// ❌ Bad - Hardcoded credentials
+let client = Client::new("wpt_abc12345", "device_id")?;
+
+// ✅ Good - Environment variables
+use std::env;
+let token = env::var("WIREPUSHER_TOKEN")?;
+let device_id = env::var("WIREPUSHER_DEVICE_ID")?;
+let client = Client::new(token, device_id)?;
+```
+
+### Error Handling
+
+```rust
+// ❌ Bad - Exposes sensitive information
+match client.send("Title", "Message").await {
+    Err(e) => println!("Error: {:?}", e), // May log tokens
+    Ok(_) => println!("Success"),
+}
+
+// ✅ Good - Safe error handling
+match client.send("Title", "Message").await {
+    Ok(_) => println!("Notification sent"),
+    Err(Error::Authentication { .. }) => {
+        eprintln!("Authentication failed - check credentials");
+    }
+    Err(Error::Validation { message, .. }) => {
+        eprintln!("Validation error: {}", message);
+    }
+    Err(_) => eprintln!("Notification failed"),
+}
+```
+
+### Input Validation
+
+```rust
+// ❌ Bad - No validation
+async fn handle_request(title: String, message: String) {
+    client.send(&title, &message).await.ok();
+}
+
+// ✅ Good - Validate input
+async fn handle_request(title: String, message: String) -> Result<()> {
+    if title.is_empty() || message.is_empty() {
+        return Err("Missing required fields".into());
+    }
+
+    if title.len() > 256 || message.len() > 4096 {
+        return Err("Content too long".into());
+    }
+
+    client.send(&title, &message).await?;
+    Ok(())
+}
+```
+
+### Context Timeouts
+
+```rust
+use tokio::time::{timeout, Duration};
+
+// ❌ Bad - No timeout
+client.send("Title", "Message").await?;
+
+// ✅ Good - Use timeout
+timeout(
+    Duration::from_secs(10),
+    client.send("Title", "Message")
+).await??;
+```
+
+## Known Security Considerations
+
+### API Token Security
+
+- Tokens are transmitted in API requests and should be kept confidential
+- Tokens are stored in plaintext by the SDK (secure storage is the user's responsibility)
+- Compromised tokens can be used to send notifications as your user
+- Rotate tokens regularly as a security best practice
+
+### Network Communication
+
+- All communication with WirePusher API is over HTTPS
+- The SDK uses reqwest which respects system-level TLS/SSL settings
+- Certificate validation is handled by the Rust runtime
+- Minimum TLS 1.2 is enforced by default
+
+### Dependencies
+
+The SDK has minimal runtime dependencies to reduce supply chain risks:
+- `reqwest` - Well-maintained HTTP client with security focus
+- `tokio` - Industry-standard async runtime
+- `serde`/`serde_json` - Widely-used serialization library
+- `thiserror` - Error handling
+- `aes`, `cbc`, `sha1` - Cryptography (encryption support)
+
+We monitor dependencies for known vulnerabilities and update promptly.
+
+### Memory Safety
+
+- Rust's ownership system prevents buffer overflows and memory corruption
+- Borrow checker prevents use-after-free vulnerabilities
+- Type safety prevents many common programming errors
+- No unsafe code in the library (except in vetted dependencies)
+
+## Vulnerability Disclosure Process
+
+When we receive a security bug report:
+
+1. **Confirm the vulnerability** and determine affected versions
+2. **Develop and test a fix** for all supported versions
+3. **Prepare security advisory** with:
+   - Description of the vulnerability
+   - Affected versions
+   - Fixed versions
+   - Workarounds (if any)
+   - Credit to reporter
+4. **Release patched versions**
+5. **Publish security advisory** on GitLab
+6. **Notify users** via:
+   - GitLab security advisory
+   - Project README update
+   - crates.io documentation
+
+## Security Audit History
+
+| Date | Type | Findings | Status |
+|------|------|----------|--------|
+| TBD  | TBD  | TBD      | TBD    |
+
+## Security Hall of Fame
+
+We thank the following individuals for responsibly disclosing security vulnerabilities:
+
+- (None yet)
+
+## Resources
+
+- [Rust Security Best Practices](https://anssi-fr.github.io/rust-guide/)
+- [OWASP API Security Top 10](https://owasp.org/www-project-api-security/)
+- [RustSec Advisory Database](https://rustsec.org/)
+
+## Questions?
+
+For security-related questions that aren't reporting vulnerabilities:
+
+- Email: security@wirepusher.com
+- General questions: support@wirepusher.com
+
+Thank you for helping keep WirePusher and its users safe!
