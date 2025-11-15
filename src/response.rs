@@ -17,6 +17,34 @@ impl NotificationResponse {
     }
 }
 
+/// Error response from the WirePusher API (nested format)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ErrorResponse {
+    /// Response status (e.g., "error")
+    pub status: String,
+
+    /// Nested error details
+    pub error: ErrorDetail,
+}
+
+/// Nested error details from the WirePusher API
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ErrorDetail {
+    /// Error type (e.g., "validation_error", "authentication_error")
+    #[serde(rename = "type")]
+    pub error_type: String,
+
+    /// Error code (e.g., "invalid_parameter", "missing_field")
+    pub code: String,
+
+    /// Human-readable error message
+    pub message: String,
+
+    /// Parameter that caused the error (if applicable)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub param: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

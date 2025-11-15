@@ -1,6 +1,6 @@
 use crate::error::{Error, Result};
 use crate::notification::Notification;
-use crate::response::NotificationResponse;
+use crate::response::{ErrorResponse, NotificationResponse};
 use reqwest::StatusCode;
 use serde_json::json;
 
@@ -265,7 +265,7 @@ impl Client {
         // Parse error responses
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            return Err(self.map_error(status, error_text));
+            return Err(self.parse_error_response(status, &error_text));
         }
 
         // Parse success response
@@ -273,9 +273,54 @@ impl Client {
         Ok(notification_response)
     }
 
-    /// Maps HTTP status codes to specific error types
-    fn map_error(&self, status: StatusCode, message: String) -> Error {
+    /// Parses error response with nested error format
+    fn parse_error_response(&self, status: StatusCode, error_text: &str) -> Error {
         let status_code = status.as_u16();
+
+        // Try to parse nested error response format
+        if let Ok(error_resp) = serde_json::from_str::<ErrorResponse>(error_text) {
+            // Build descriptive error message from nested error details
+            let mut error_message = error_resp.error.message.clone();
+
+            // Add error code if available and non-empty
+            if !error_resp.error.code.is_empty() {
+                error_message = format!("{} [{}]", error_message, error_resp.error.code);
+            }
+
+            // Add parameter context if available
+            if let Some(param) = &error_resp.error.param {
+                if !param.is_empty() {
+                    error_message = format!("{} (parameter: {})", error_message, param);
+                }
+            }
+
+            // Map to specific error type based on status code
+            return match status {
+                StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Error::Authentication {
+                    message: error_message,
+                    status_code,
+                },
+                StatusCode::BAD_REQUEST | StatusCode::NOT_FOUND => Error::Validation {
+                    message: error_message,
+                    status_code,
+                },
+                StatusCode::TOO_MANY_REQUESTS => Error::RateLimit {
+                    message: error_message,
+                    status_code,
+                },
+                _ => Error::Api {
+                    message: error_message,
+                    status_code,
+                },
+            };
+        }
+
+        // Fallback to plain text error if parsing fails
+        let message = if error_text.is_empty() {
+            format!("HTTP error {}", status_code)
+        } else {
+            error_text.to_string()
+        };
 
         match status {
             StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Error::Authentication {
@@ -332,23 +377,59 @@ mod tests {
     }
 
     #[test]
-    fn test_map_error_authentication() {
+    fn test_parse_error_authentication() {
         let client = Client::new("token", "device_id").unwrap();
-        let error = client.map_error(StatusCode::UNAUTHORIZED, "Invalid token".to_string());
+        let error = client.parse_error_response(StatusCode::UNAUTHORIZED, "Invalid token");
         assert!(error.is_authentication_error());
     }
 
     #[test]
-    fn test_map_error_validation() {
+    fn test_parse_error_validation() {
         let client = Client::new("token", "device_id").unwrap();
-        let error = client.map_error(StatusCode::BAD_REQUEST, "Invalid params".to_string());
+        let error = client.parse_error_response(StatusCode::BAD_REQUEST, "Invalid params");
         assert!(error.is_validation_error());
     }
 
     #[test]
-    fn test_map_error_rate_limit() {
+    fn test_parse_error_rate_limit() {
         let client = Client::new("token", "device_id").unwrap();
-        let error = client.map_error(StatusCode::TOO_MANY_REQUESTS, "Rate limit".to_string());
+        let error = client.parse_error_response(StatusCode::TOO_MANY_REQUESTS, "Rate limit");
         assert!(error.is_rate_limit_error());
+    }
+
+    #[test]
+    fn test_parse_nested_error_format() {
+        let client = Client::new("token", "device_id").unwrap();
+        let nested_error = r#"{"status":"error","error":{"type":"validation_error","code":"invalid_parameter","message":"Title is required","param":"title"}}"#;
+        let error = client.parse_error_response(StatusCode::BAD_REQUEST, nested_error);
+
+        assert!(error.is_validation_error());
+        match error {
+            Error::Validation { message, status_code } => {
+                assert_eq!(status_code, 400);
+                assert!(message.contains("Title is required"));
+                assert!(message.contains("[invalid_parameter]"));
+                assert!(message.contains("(parameter: title)"));
+            }
+            _ => panic!("Expected Validation error"),
+        }
+    }
+
+    #[test]
+    fn test_parse_nested_error_without_param() {
+        let client = Client::new("token", "device_id").unwrap();
+        let nested_error = r#"{"status":"error","error":{"type":"authentication_error","code":"invalid_token","message":"Token is invalid"}}"#;
+        let error = client.parse_error_response(StatusCode::UNAUTHORIZED, nested_error);
+
+        assert!(error.is_authentication_error());
+        match error {
+            Error::Authentication { message, status_code } => {
+                assert_eq!(status_code, 401);
+                assert!(message.contains("Token is invalid"));
+                assert!(message.contains("[invalid_token]"));
+                assert!(!message.contains("(parameter:"));
+            }
+            _ => panic!("Expected Authentication error"),
+        }
     }
 }

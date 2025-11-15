@@ -106,4 +106,4 @@ pub use client::Client;
 pub use encryption::encrypt_text;
 pub use error::{Error, Result};
 pub use notification::{Notification, NotificationBuilder};
-pub use response::NotificationResponse;
+pub use response::{ErrorDetail, ErrorResponse, NotificationResponse};
