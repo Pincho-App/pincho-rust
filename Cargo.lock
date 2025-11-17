@@ -2193,7 +2193,7 @@ dependencies = [
 
 [[package]]
 name = "wirepusher"
-version = "1.0.0-alpha.1"
+version = "1.0.0-alpha.2"
 dependencies = [
  "aes",
  "base64 0.22.1",

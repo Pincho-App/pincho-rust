@@ -9,7 +9,7 @@ Official Rust client for [WirePusher](https://wirepusher.dev) push notifications
 
 ```toml
 [dependencies]
-wirepusher = "1.0.0-alpha.1"
+wirepusher = "1.0.0-alpha.2"
 tokio = { version = "1", features = ["full"] }
 ```
 
