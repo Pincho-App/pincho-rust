@@ -126,6 +126,32 @@ steps:
           echo "To publish: git tag v1.0.0 && git push origin v1.0.0"
         fi
 
+  # Step 10: Send notification on successful release (only on tags)
+  - name: 'curlimages/curl:latest'
+    id: 'notify-release'
+    waitFor: ['publish']
+    entrypoint: 'sh'
+    secretEnv: ['WIREPUSHER_TOKEN']
+    args:
+      - '-c'
+      - |
+        if [ -z "$TAG_NAME" ]; then
+          echo "=== No Git tag detected ==="
+          echo "Skipping notification (only runs on tags)"
+          exit 0
+        fi
+
+        echo "=== Sending release notification via NotifAI ==="
+        curl -s -X POST https://api.wirepusher.dev/notifai \
+          -H "Authorization: Bearer $$WIREPUSHER_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"text\": \"WirePusher Rust SDK $TAG_NAME released to crates.io successfully. Add wirepusher = version to Cargo.toml. View package at https://crates.io/crates/wirepusher\"
+          }"
+
+        echo ""
+        echo "✓ Release notification sent via NotifAI"
+
 timeout: '600s'
 options:
   machineType: 'N1_HIGHCPU_8'
@@ -145,3 +171,5 @@ availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/crates-io-token/versions/latest
       env: 'CRATES_IO_TOKEN'
+    - versionName: projects/$PROJECT_ID/secrets/wirepusher-token/versions/latest
+      env: 'WIREPUSHER_TOKEN'
