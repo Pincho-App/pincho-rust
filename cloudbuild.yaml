@@ -42,13 +42,13 @@ steps:
 
         # Extract line coverage percentage
         if [ -f coverage/cobertura.xml ]; then
-          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage/cobertura.xml | head -1)
-          COVERAGE_PCT=$(echo "$COVERAGE * 100" | bc)
-          echo "Line coverage: $COVERAGE_PCT%"
+          COV_RATE=$$(grep -oP 'line-rate="\K[0-9.]+' coverage/cobertura.xml | head -1)
+          COV_PCT=$$(echo "$$COV_RATE * 100" | bc)
+          echo "Line coverage: $$COV_PCT%"
 
           # Check if coverage meets threshold
-          if (( $(echo "$COVERAGE < 0.80" | bc -l) )); then
-            echo "ERROR: Coverage $COVERAGE_PCT% is below 80% threshold"
+          if (( $$(echo "$$COV_RATE < 0.80" | bc -l) )); then
+            echo "ERROR: Coverage $$COV_PCT% is below 80% threshold"
             exit 1
           fi
 
