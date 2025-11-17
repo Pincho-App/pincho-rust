@@ -3,7 +3,7 @@
 
 steps:
   # Step 1: Restore dependencies
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'fetch'
     entrypoint: 'cargo'
     args:
@@ -11,7 +11,7 @@ steps:
       - '--locked'
 
   # Step 2: Build in release mode
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'build'
     entrypoint: 'cargo'
     waitFor: ['fetch']
@@ -21,7 +21,7 @@ steps:
       - '--locked'
 
   # Step 3: Run tests
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'test'
     entrypoint: 'cargo'
     waitFor: ['build']
@@ -30,7 +30,7 @@ steps:
       - '--locked'
 
   # Step 4: Check coverage with tarpaulin (90% threshold)
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'coverage'
     entrypoint: 'bash'
     waitFor: ['test']
@@ -59,7 +59,7 @@ steps:
         fi
 
   # Step 5: Run clippy (linter)
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'clippy'
     entrypoint: 'bash'
     waitFor: ['build']
@@ -70,7 +70,7 @@ steps:
         cargo clippy --all-targets --locked -- -D warnings
 
   # Step 6: Check formatting
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'fmt'
     entrypoint: 'bash'
     waitFor: ['fetch']
@@ -81,7 +81,7 @@ steps:
         cargo fmt -- --check
 
   # Step 7: Build documentation
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'docs'
     entrypoint: 'cargo'
     waitFor: ['build']
@@ -91,7 +91,7 @@ steps:
       - '--locked'
 
   # Step 8: Package the crate
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'package'
     entrypoint: 'cargo'
     waitFor: ['coverage', 'clippy', 'fmt']
@@ -102,7 +102,7 @@ steps:
 
   # Step 9: Publish to crates.io (ONLY on Git tags)
   # Requires CRATES_IO_TOKEN secret
-  - name: 'rust:1.83'
+  - name: 'rust:latest'
     id: 'publish'
     entrypoint: 'bash'
     waitFor: ['package']
