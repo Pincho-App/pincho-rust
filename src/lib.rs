@@ -18,7 +18,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), wirepusher::Error> {
-//!     let client = Client::new("abc12345", "your_device_id")?;
+//!     let client = Client::new("abc12345")?;
 //!
 //!     // Send a simple notification
 //!     let response = client.send("Build Complete", "v1.2.3 deployed successfully").await?;
@@ -38,7 +38,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), wirepusher::Error> {
-//!     let client = Client::new("abc12345", "your_device_id")?;
+//!     let client = Client::new("abc12345")?;
 //!
 //!     // Build a notification with all options
 //!     let notification = Notification::builder()
@@ -64,7 +64,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     let client = Client::new("abc12345", "device_id").unwrap();
+//!     let client = Client::new("abc12345").unwrap();
 //!
 //!     match client.send("Test", "Message").await {
 //!         Ok(response) => println!("Success: {}", response.message),
@@ -106,4 +106,7 @@ pub use client::Client;
 pub use encryption::encrypt_text;
 pub use error::{Error, Result};
 pub use notification::{Notification, NotificationBuilder};
-pub use response::{ErrorDetail, ErrorResponse, NotificationResponse};
+pub use response::{
+    ErrorDetail, ErrorResponse, NotifAINotification, NotifAIResponse, NotificationResponse,
+    RateLimitInfo,
+};

@@ -100,9 +100,7 @@ impl NotificationBuilder {
 
     /// Adds a single tag (max 50 characters)
     pub fn add_tag(mut self, tag: impl Into<String>) -> Self {
-        self.tags
-            .get_or_insert_with(Vec::new)
-            .push(tag.into());
+        self.tags.get_or_insert_with(Vec::new).push(tag.into());
         self
     }
 
@@ -168,30 +166,31 @@ impl NotificationBuilder {
             // Validate individual tag length (max 50 characters per tag)
             for (index, tag) in tags.iter().enumerate() {
                 if tag.is_empty() {
-                    return Err(Error::BuilderValidation(
-                        format!("tag at index {} cannot be empty", index),
-                    ));
+                    return Err(Error::BuilderValidation(format!(
+                        "tag at index {} cannot be empty",
+                        index
+                    )));
                 }
                 if tag.len() > 50 {
-                    return Err(Error::BuilderValidation(
-                        format!("tag at index {} exceeds 50 characters (length: {})", index, tag.len()),
-                    ));
+                    return Err(Error::BuilderValidation(format!(
+                        "tag at index {} exceeds 50 characters (length: {})",
+                        index,
+                        tag.len()
+                    )));
                 }
             }
         }
 
         // Validate image_url is a valid URL
         if let Some(ref image_url) = self.image_url {
-            Url::parse(image_url).map_err(|e| {
-                Error::BuilderValidation(format!("invalid image_url: {}", e))
-            })?;
+            Url::parse(image_url)
+                .map_err(|e| Error::BuilderValidation(format!("invalid image_url: {}", e)))?;
         }
 
         // Validate action_url is a valid URL
         if let Some(ref action_url) = self.action_url {
-            Url::parse(action_url).map_err(|e| {
-                Error::BuilderValidation(format!("invalid action_url: {}", e))
-            })?;
+            Url::parse(action_url)
+                .map_err(|e| Error::BuilderValidation(format!("invalid action_url: {}", e)))?;
         }
 
         Ok(Notification {
@@ -245,7 +244,10 @@ mod tests {
 
         assert_eq!(notification.title, "Deploy Complete");
         assert_eq!(notification.message, "v1.2.3 deployed");
-        assert_eq!(notification.notification_type, Some("deployment".to_string()));
+        assert_eq!(
+            notification.notification_type,
+            Some("deployment".to_string())
+        );
         assert_eq!(
             notification.tags,
             Some(vec!["prod".to_string(), "release".to_string()])
@@ -451,11 +453,7 @@ mod tests {
         let result = Notification::builder()
             .title("Test")
             .message("Message")
-            .tags(vec![
-                "tag1".to_string(),
-                "tag2".to_string(),
-                "a".repeat(50),
-            ])
+            .tags(vec!["tag1".to_string(), "tag2".to_string(), "a".repeat(50)])
             .build();
 
         assert!(result.is_ok());

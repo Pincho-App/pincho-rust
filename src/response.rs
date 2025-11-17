@@ -17,6 +17,42 @@ impl NotificationResponse {
     }
 }
 
+/// Rate limit information from response headers
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RateLimitInfo {
+    /// Maximum requests allowed in the window
+    pub limit: u32,
+    /// Requests remaining in the current window
+    pub remaining: u32,
+    /// Unix timestamp when the rate limit resets
+    pub reset: u64,
+}
+
+/// Response from NotifAI endpoint
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NotifAIResponse {
+    /// Response status
+    pub status: String,
+
+    /// Generated notification
+    pub notification: NotifAINotification,
+}
+
+/// AI-generated notification details
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NotifAINotification {
+    /// AI-generated title
+    pub title: String,
+
+    /// AI-generated message
+    pub message: String,
+
+    /// Notification type (if provided in request)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "type")]
+    pub notification_type: Option<String>,
+}
+
 /// Error response from the WirePusher API (nested format)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ErrorResponse {

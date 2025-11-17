@@ -46,7 +46,7 @@ cargo clippy -- -D warnings
 ```rust
 use wirepusher::{Client, Notification};
 
-let client = Client::new("abc12345", "device_id").unwrap();
+let client = Client::from_env().unwrap();
 let notification = Notification::builder()
     .title("Test")
     .message("Special: ñ € 中")
@@ -58,7 +58,7 @@ client.send_notification(notification).await?;
 
 **Expected:** Message decrypts correctly
 **Actual:** Message appears garbled
-**Environment:** SDK v1.0.0, Rust 1.75, macOS 14.0
+**Environment:** SDK v1.0.0-alpha.1, Rust 1.83, macOS 14.0
 
 [Paste error output]
 ```
@@ -148,9 +148,66 @@ cargo doc --open
 cargo test && cargo fmt -- --check && cargo clippy -- -D warnings
 ```
 
+## CI/CD Pipeline
+
+This project uses Google Cloud Build for automated testing and releases.
+
+### Pipeline Steps
+
+On every push to `main`:
+1. Fetch dependencies
+2. Build release binary
+3. Run test suite (59 tests)
+4. Check code coverage (80% threshold)
+5. Run clippy linter
+6. Check formatting
+7. Build documentation
+8. Package crate
+
+On version tags (`v*.*.*`):
+- All of the above, plus:
+- Publish to crates.io
+- Send notification via WirePusher
+
+### Infrastructure
+
+CI/CD infrastructure is managed via Terraform in the `frontend` repository:
+- Repository: `frontend/terraform/modules/cloudbuild/main.tf`
+- Secrets: `crates-io-token`, `wirepusher-token` (GCP Secret Manager)
+- Triggers: Main branch + release tags
+
+## Release Process
+
+1. **Update version** in `Cargo.toml`
+2. **Commit changes**:
+   ```bash
+   git add -A
+   git commit -m "chore: bump version to X.Y.Z"
+   ```
+3. **Create tag**:
+   ```bash
+   git tag vX.Y.Z
+   ```
+4. **Push with tags**:
+   ```bash
+   git push origin main --tags
+   ```
+
+Cloud Build automatically publishes to crates.io on tag push.
+
+### Version Numbering
+
+We follow [Semantic Versioning](https://semver.org/):
+- **MAJOR**: Breaking API changes
+- **MINOR**: New features (backwards compatible)
+- **PATCH**: Bug fixes (backwards compatible)
+
+Pre-release versions: `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, `X.Y.Z-rc.N`
+
 ## Need Help?
 
 - **Architecture questions?** See [CLAUDE.md](CLAUDE.md)
+- **CI/CD setup?** See [docs/CI_CD_SETUP.md](docs/CI_CD_SETUP.md)
 - **Stuck?** Open an issue or ask in your MR
 
 ## License

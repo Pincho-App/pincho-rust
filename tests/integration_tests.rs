@@ -1,5 +1,5 @@
 use wiremock::{
-    matchers::{method, path, query_param},
+    matchers::{header, method, path},
     Mock, MockServer, ResponseTemplate,
 };
 use wirepusher::{Client, Error, Notification};
@@ -10,8 +10,7 @@ async fn test_send_simple_notification_success() {
 
     Mock::given(method("POST"))
         .and(path("/send"))
-        .and(query_param("type", "wirepusher"))
-        .and(query_param("token", "test_token"))
+        .and(header("authorization", "Bearer test_token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "status": "success",
             "message": "Notification sent"
@@ -19,8 +18,7 @@ async fn test_send_simple_notification_success() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
 
     let response = client.send("Test Title", "Test Message").await.unwrap();
 
@@ -35,6 +33,7 @@ async fn test_send_notification_with_all_options() {
 
     Mock::given(method("POST"))
         .and(path("/send"))
+        .and(header("authorization", "Bearer test_token"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
             "status": "success",
             "message": "Notification sent with options"
@@ -42,8 +41,7 @@ async fn test_send_notification_with_all_options() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
 
     let notification = Notification::builder()
         .title("Deploy Complete")
@@ -78,8 +76,9 @@ async fn test_authentication_error() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("invalid_token", "test_device", &base_url).unwrap();
+    let mut client = Client::new("invalid_token").unwrap();
+    client.set_base_url(mock_server.uri());
+    client.set_max_retries(0); // No retries for this test
 
     let result = client.send("Test", "Message").await;
 
@@ -112,8 +111,7 @@ async fn test_validation_error() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
 
     let result = client.send("", "").await;
 
@@ -130,7 +128,7 @@ async fn test_validation_error() {
 }
 
 #[tokio::test]
-async fn test_rate_limit_error() {
+async fn test_rate_limit_error_no_retry() {
     let mock_server = MockServer::start().await;
 
     Mock::given(method("POST"))
@@ -143,11 +141,14 @@ async fn test_rate_limit_error() {
                 "message": "Rate limit exceeded"
             }
         })))
+        .expect(1) // Only called once (no retries)
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    // Create client with 0 retries
+    let mut client = Client::new("test_token").unwrap();
+    client.set_base_url(mock_server.uri());
+    client.set_max_retries(0); // Disable retries for this test
 
     let result = client.send("Test", "Message").await;
 
@@ -179,8 +180,7 @@ async fn test_forbidden_error() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -207,8 +207,7 @@ async fn test_not_found_error() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
 
     let result = client.send("Test", "Message").await;
 
@@ -219,7 +218,7 @@ async fn test_not_found_error() {
 }
 
 #[tokio::test]
-async fn test_server_error() {
+async fn test_server_error_no_retry() {
     let mock_server = MockServer::start().await;
 
     Mock::given(method("POST"))
@@ -232,33 +231,31 @@ async fn test_server_error() {
                 "message": "Internal server error"
             }
         })))
+        .expect(1) // Only one call with no retries
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let mut client = Client::new("test_token").unwrap();
+    client.set_base_url(mock_server.uri());
+    client.set_max_retries(0); // Disable retries for this test
 
     let result = client.send("Test", "Message").await;
 
     assert!(result.is_err());
     let error = result.unwrap_err();
     assert_eq!(error.status_code(), Some(500));
+    assert!(error.is_retryable()); // Server errors are retryable
 }
 
 #[test]
 fn test_client_creation_validation() {
     // Empty token
-    let result = Client::new("", "device_id");
-    assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), Error::InvalidConfig(_)));
-
-    // Empty device ID
-    let result = Client::new("token", "");
+    let result = Client::new("");
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), Error::InvalidConfig(_)));
 
     // Valid client
-    let result = Client::new("token", "device_id");
+    let result = Client::new("token");
     assert!(result.is_ok());
 }
 
@@ -323,8 +320,7 @@ async fn test_concurrent_requests() {
         .mount(&mock_server)
         .await;
 
-    let base_url = format!("{}/send", mock_server.uri());
-    let client = Client::with_base_url("test_token", "test_device", &base_url).unwrap();
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
 
     // Send multiple concurrent requests
     let futures: Vec<_> = (0..10)
@@ -345,4 +341,105 @@ async fn test_concurrent_requests() {
         assert!(result.is_ok());
         assert!(result.unwrap().is_success());
     }
+}
+
+#[tokio::test]
+async fn test_rate_limit_info_parsing() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/send"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(serde_json::json!({
+                    "status": "success",
+                    "message": "Notification sent"
+                }))
+                .insert_header("RateLimit-Limit", "100")
+                .insert_header("RateLimit-Remaining", "99")
+                .insert_header("RateLimit-Reset", "1234567890"),
+        )
+        .mount(&mock_server)
+        .await;
+
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
+
+    let response = client.send("Test", "Message").await.unwrap();
+    assert!(response.is_success());
+
+    // Check rate limit info
+    let rate_limit = client.get_last_rate_limit();
+    assert!(rate_limit.is_some());
+    let rate_limit = rate_limit.unwrap();
+    assert_eq!(rate_limit.limit, 100);
+    assert_eq!(rate_limit.remaining, 99);
+    assert_eq!(rate_limit.reset, 1234567890);
+}
+
+#[tokio::test]
+async fn test_notifai_endpoint() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/notifai"))
+        .and(header("authorization", "Bearer test_token"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "status": "success",
+            "notification": {
+                "title": "Deployment Complete",
+                "message": "Version 2.1.3 has been deployed successfully",
+                "type": "deployment"
+            }
+        })))
+        .mount(&mock_server)
+        .await;
+
+    let client = Client::with_base_url("test_token", mock_server.uri()).unwrap();
+
+    let response = client
+        .notifai("deployment finished v2.1.3", Some("deployment".to_string()))
+        .await
+        .unwrap();
+
+    assert_eq!(response.status, "success");
+    assert_eq!(response.notification.title, "Deployment Complete");
+    assert!(response
+        .notification
+        .message
+        .contains("deployed successfully"));
+    assert_eq!(
+        response.notification.notification_type,
+        Some("deployment".to_string())
+    );
+}
+
+#[test]
+fn test_error_retryable() {
+    // Rate limit errors are retryable
+    let error = Error::RateLimit {
+        message: "Rate limited".to_string(),
+        status_code: 429,
+    };
+    assert!(error.is_retryable());
+
+    // Server errors are retryable
+    let error = Error::Api {
+        message: "Server error".to_string(),
+        status_code: 500,
+    };
+    assert!(error.is_retryable());
+
+    // Authentication errors are not retryable
+    let error = Error::Authentication {
+        message: "Invalid token".to_string(),
+        status_code: 401,
+    };
+    assert!(!error.is_retryable());
+
+    // Validation errors are not retryable
+    let error = Error::Validation {
+        message: "Invalid params".to_string(),
+        status_code: 400,
+    };
+    assert!(!error.is_retryable());
 }

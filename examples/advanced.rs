@@ -1,16 +1,9 @@
-use std::env;
 use wirepusher::{Client, Error, Notification};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Get credentials from environment variables
-    let token = env::var("WIREPUSHER_TOKEN")
-        .expect("WIREPUSHER_TOKEN environment variable not set");
-    let device_id = env::var("WIREPUSHER_DEVICE_ID")
-        .expect("WIREPUSHER_DEVICE_ID environment variable not set");
-
-    // Create a WirePusher client
-    let client = Client::new(token, device_id)?;
+    // Create a WirePusher client from environment
+    let client = Client::from_env()?;
 
     // Build a notification with all options
     println!("Building advanced notification...");
@@ -45,22 +38,56 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("✓ Success!");
             println!("  Status: {}", response.status);
             println!("  Message: {}", response.message);
+
+            // Check rate limit info
+            if let Some(rate_limit) = client.get_last_rate_limit() {
+                println!("\nRate limit info:");
+                println!("  Remaining: {}/{}", rate_limit.remaining, rate_limit.limit);
+            }
         }
-        Err(Error::Authentication { message, status_code }) => {
+        Err(Error::Authentication {
+            message,
+            status_code,
+        }) => {
             eprintln!("✗ Authentication error (HTTP {}):", status_code);
             eprintln!("  {}", message);
-            eprintln!("  Check your WIREPUSHER_TOKEN and WIREPUSHER_DEVICE_ID");
+            eprintln!("  Check your WIREPUSHER_TOKEN");
         }
-        Err(Error::Validation { message, status_code }) => {
+        Err(Error::Validation {
+            message,
+            status_code,
+        }) => {
             eprintln!("✗ Validation error (HTTP {}):", status_code);
             eprintln!("  {}", message);
         }
-        Err(Error::RateLimit { message, status_code }) => {
+        Err(Error::RateLimit {
+            message,
+            status_code,
+        }) => {
             eprintln!("✗ Rate limit exceeded (HTTP {}):", status_code);
             eprintln!("  {}", message);
         }
         Err(e) => {
             eprintln!("✗ Error: {}", e);
+            if e.is_retryable() {
+                eprintln!("  This error is retryable");
+            }
+        }
+    }
+
+    // Example: NotifAI (AI-powered notification generation)
+    println!("\n--- NotifAI Example ---");
+    match client
+        .notifai("deployment finished v2.1.3 is live", None)
+        .await
+    {
+        Ok(response) => {
+            println!("✓ NotifAI generated notification:");
+            println!("  Title: {}", response.notification.title);
+            println!("  Message: {}", response.notification.message);
+        }
+        Err(e) => {
+            eprintln!("✗ NotifAI error: {}", e);
         }
     }
 

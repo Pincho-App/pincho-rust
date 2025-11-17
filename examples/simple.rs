@@ -1,21 +1,21 @@
-use std::env;
 use wirepusher::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), wirepusher::Error> {
-    // Get credentials from environment variables
-    let token = env::var("WIREPUSHER_TOKEN")
-        .expect("WIREPUSHER_TOKEN environment variable not set");
-    let device_id = env::var("WIREPUSHER_DEVICE_ID")
-        .expect("WIREPUSHER_DEVICE_ID environment variable not set");
+    // Create a WirePusher client from environment
+    // Reads WIREPUSHER_TOKEN from environment
+    let client = Client::from_env()?;
 
-    // Create a WirePusher client
-    let client = Client::new(token, device_id)?;
+    // Or provide token explicitly:
+    // let client = Client::new("your_token")?;
 
     // Send a simple notification
     println!("Sending simple notification...");
     let response = client
-        .send("Hello from Rust!", "This is a test notification from the Rust Client Library")
+        .send(
+            "Hello from Rust!",
+            "This is a test notification from the Rust Client Library",
+        )
         .await?;
 
     println!("Response status: {}", response.status);
@@ -23,6 +23,13 @@ async fn main() -> Result<(), wirepusher::Error> {
 
     if response.is_success() {
         println!("✓ Notification sent successfully!");
+    }
+
+    // Check rate limit info
+    if let Some(rate_limit) = client.get_last_rate_limit() {
+        println!("\nRate limit info:");
+        println!("  Remaining: {}/{}", rate_limit.remaining, rate_limit.limit);
+        println!("  Resets at: {}", rate_limit.reset);
     }
 
     Ok(())

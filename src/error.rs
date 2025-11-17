@@ -85,4 +85,22 @@ impl Error {
     pub fn is_rate_limit_error(&self) -> bool {
         matches!(self, Error::RateLimit { .. })
     }
+
+    /// Returns true if this error is retryable
+    ///
+    /// Retryable errors include:
+    /// - Rate limit errors (429)
+    /// - Server errors (5xx)
+    /// - Network/connection errors
+    pub fn is_retryable(&self) -> bool {
+        match self {
+            Error::RateLimit { .. } => true,
+            Error::Api { status_code, .. } => *status_code >= 500,
+            Error::Request(e) => {
+                // Network errors are retryable
+                e.is_connect() || e.is_timeout()
+            }
+            _ => false,
+        }
+    }
 }

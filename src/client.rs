@@ -1,18 +1,15 @@
 use crate::error::{Error, Result};
 use crate::notification::Notification;
-use crate::response::{ErrorResponse, NotificationResponse};
+use crate::response::{ErrorResponse, NotificationResponse, RateLimitInfo};
 use reqwest::StatusCode;
 use serde_json::json;
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
 /// WirePusher API client
 ///
 /// The client is thread-safe and reuses HTTP connections via connection pooling.
 /// It's recommended to create a single client instance and reuse it across your application.
-///
-/// # Deprecation Note
-///
-/// This client uses the v1 API with legacy `device_id` authentication. For new projects,
-/// consider using Firebase Auth tokens with the v2 API when available.
 ///
 /// # Examples
 ///
@@ -21,7 +18,7 @@ use serde_json::json;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), wirepusher::Error> {
-///     let client = Client::new("abc12345", "your_device_id")?;
+///     let client = Client::new("abc12345")?;
 ///     let response = client.send("Hello", "World!").await?;
 ///     println!("Status: {}", response.status);
 ///     Ok(())
@@ -31,43 +28,39 @@ use serde_json::json;
 pub struct Client {
     http_client: reqwest::Client,
     token: String,
-    /// Device ID for authentication (currently required for v1 API)
-    ///
-    /// # Migration Note
-    ///
-    /// This field is used with the v1 API. Future versions will support Firebase Auth tokens
-    /// via a v2 API endpoint. Until v2 API is released, this field remains required.
-    ///
-    /// To prepare for migration:
-    /// 1. Keep using this field with v1 API (current)
-    /// 2. When v2 API is available, migrate to token-only authentication
-    /// 3. See migration guide at: https://wirepusher.dev/docs/migration
-    device_id: String,
     base_url: String,
+    max_retries: u32,
+    last_rate_limit: Arc<RwLock<Option<RateLimitInfo>>>,
 }
 
 impl Client {
     /// Default API base URL
-    const DEFAULT_BASE_URL: &'static str = "https://wirepusher.com/send";
+    const DEFAULT_BASE_URL: &'static str = "https://api.wirepusher.dev";
+    /// Default timeout in seconds
+    const DEFAULT_TIMEOUT: u64 = 30;
+    /// Default max retries
+    const DEFAULT_MAX_RETRIES: u32 = 3;
+    /// Maximum backoff delay in seconds
+    const MAX_BACKOFF_SECS: u64 = 30;
+    /// Library version
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
     /// Creates a new WirePusher client
     ///
     /// # Arguments
     ///
-    /// * `token` - Your WirePusher API token
-    /// * `device_id` - Your WirePusher device ID (required for v1 API)
+    /// * `token` - Your WirePusher API token (Bearer token)
     ///
-    /// # Migration Note
+    /// # Environment Variables
     ///
-    /// This constructor uses the v1 API which requires both token and device_id.
-    /// A future v2 API will support token-only authentication with Firebase Auth.
-    /// For migration guidance when v2 is released, see: https://wirepusher.dev/docs/migration
+    /// - `WIREPUSHER_TOKEN` - Default token if not provided
+    /// - `WIREPUSHER_TIMEOUT` - Request timeout in seconds (default: 30)
+    /// - `WIREPUSHER_MAX_RETRIES` - Max retry attempts (default: 3)
     ///
     /// # Errors
     ///
     /// Returns an error if:
     /// - Token is empty
-    /// - Device ID is empty
     /// - HTTP client cannot be created
     ///
     /// # Examples
@@ -76,34 +69,81 @@ impl Client {
     /// use wirepusher::Client;
     ///
     /// # fn main() -> Result<(), wirepusher::Error> {
-    /// let client = Client::new("abc12345", "your_device_id")?;
+    /// let client = Client::new("abc12345")?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(token: impl Into<String>, device_id: impl Into<String>) -> Result<Self> {
+    pub fn new(token: impl Into<String>) -> Result<Self> {
         let token = token.into();
-        let device_id = device_id.into();
 
         if token.is_empty() {
             return Err(Error::InvalidConfig("token cannot be empty".to_string()));
         }
 
-        if device_id.is_empty() {
-            return Err(Error::InvalidConfig(
-                "device_id cannot be empty".to_string(),
-            ));
-        }
+        let timeout = std::env::var("WIREPUSHER_TIMEOUT")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(Self::DEFAULT_TIMEOUT);
+
+        let max_retries = std::env::var("WIREPUSHER_MAX_RETRIES")
+            .ok()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(Self::DEFAULT_MAX_RETRIES);
 
         let http_client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
+            .timeout(Duration::from_secs(timeout))
+            .user_agent(format!("wirepusher-rust/{}", Self::VERSION))
             .build()
-            .map_err(|e| Error::Request(e))?;
+            .map_err(Error::Request)?;
 
         Ok(Self {
             http_client,
             token,
-            device_id,
             base_url: Self::DEFAULT_BASE_URL.to_string(),
+            max_retries,
+            last_rate_limit: Arc::new(RwLock::new(None)),
+        })
+    }
+
+    /// Creates a client from environment variables
+    ///
+    /// Reads `WIREPUSHER_TOKEN` from environment.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `WIREPUSHER_TOKEN` is not set or empty.
+    pub fn from_env() -> Result<Self> {
+        let token = std::env::var("WIREPUSHER_TOKEN")
+            .map_err(|_| Error::InvalidConfig("WIREPUSHER_TOKEN not set".to_string()))?;
+        Self::new(token)
+    }
+
+    /// Creates a client with custom configuration
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - Your WirePusher API token
+    /// * `timeout` - Request timeout in seconds
+    /// * `max_retries` - Maximum retry attempts for retryable errors
+    pub fn with_config(token: impl Into<String>, timeout: u64, max_retries: u32) -> Result<Self> {
+        let token = token.into();
+
+        if token.is_empty() {
+            return Err(Error::InvalidConfig("token cannot be empty".to_string()));
+        }
+
+        let http_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(timeout))
+            .user_agent(format!("wirepusher-rust/{}", Self::VERSION))
+            .build()
+            .map_err(Error::Request)?;
+
+        Ok(Self {
+            http_client,
+            token,
+            base_url: Self::DEFAULT_BASE_URL.to_string(),
+            max_retries,
+            last_rate_limit: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -112,20 +152,29 @@ impl Client {
     /// # Arguments
     ///
     /// * `token` - Your WirePusher API token
-    /// * `device_id` - Your WirePusher device ID (required for v1 API)
     /// * `base_url` - Custom base URL for the API
-    ///
-    /// # Migration Note
-    ///
-    /// Uses v1 API with device_id authentication. See [`Client::new`] for migration details.
-    pub fn with_base_url(
-        token: impl Into<String>,
-        device_id: impl Into<String>,
-        base_url: impl Into<String>,
-    ) -> Result<Self> {
-        let mut client = Self::new(token, device_id)?;
+    pub fn with_base_url(token: impl Into<String>, base_url: impl Into<String>) -> Result<Self> {
+        let mut client = Self::new(token)?;
         client.base_url = base_url.into();
         Ok(client)
+    }
+
+    /// Sets a custom base URL (useful for testing)
+    pub fn set_base_url(&mut self, base_url: impl Into<String>) {
+        self.base_url = base_url.into();
+    }
+
+    /// Sets the max retries (useful for testing)
+    pub fn set_max_retries(&mut self, max_retries: u32) {
+        self.max_retries = max_retries;
+    }
+
+    /// Returns the last rate limit information
+    pub fn get_last_rate_limit(&self) -> Option<RateLimitInfo> {
+        self.last_rate_limit
+            .read()
+            .ok()
+            .and_then(|guard| guard.clone())
     }
 
     /// Sends a simple notification with just title and message
@@ -149,7 +198,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), wirepusher::Error> {
-    ///     let client = Client::new("abc12345", "device_id")?;
+    ///     let client = Client::new("abc12345")?;
     ///     let response = client.send("Build Complete", "v1.2.3 deployed").await?;
     ///     assert!(response.is_success());
     ///     Ok(())
@@ -184,7 +233,7 @@ impl Client {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<(), wirepusher::Error> {
-    ///     let client = Client::new("abc12345", "device_id")?;
+    ///     let client = Client::new("abc12345")?;
     ///
     ///     let notification = Notification::builder()
     ///         .title("Deploy Complete")
@@ -202,6 +251,11 @@ impl Client {
         &self,
         mut notification: Notification,
     ) -> Result<NotificationResponse> {
+        // Normalize tags
+        if let Some(ref mut tags) = notification.tags {
+            *tags = Self::normalize_tags(tags);
+        }
+
         // Handle encryption if password is set
         let message = if let Some(ref password) = notification.encryption_password {
             // Generate random IV
@@ -212,29 +266,21 @@ impl Client {
             // Encrypt the message
             let encrypted = crate::encryption::encrypt_text(&notification.message, password, &iv)?;
 
-            // Store IV in custom Base64 format
-            use base64::{engine::general_purpose::STANDARD, Engine as _};
-            let iv_base64 = STANDARD.encode(iv);
-            notification.message_iv = Some(
-                iv_base64
-                    .replace('+', "-")
-                    .replace('/', ".")
-                    .replace('=', "_"),
-            );
+            // Store IV as hex (matching other SDKs)
+            notification.message_iv = Some(hex::encode(iv));
 
             encrypted
         } else {
             notification.message.clone()
         };
 
-        // Build the request body
+        // Build the request body with camelCase field names
         let mut body = json!({
-            "id": self.device_id,
             "title": notification.title,
             "message": message,
         });
 
-        // Add optional fields
+        // Add optional fields with camelCase
         if let Some(notification_type) = notification.notification_type {
             body["type"] = json!(notification_type);
         }
@@ -242,35 +288,209 @@ impl Client {
             body["tags"] = json!(tags);
         }
         if let Some(image_url) = notification.image_url {
-            body["image_url"] = json!(image_url);
+            body["imageURL"] = json!(image_url);
         }
         if let Some(action_url) = notification.action_url {
-            body["action_url"] = json!(action_url);
+            body["actionURL"] = json!(action_url);
         }
         if let Some(message_iv) = notification.message_iv {
-            body["message_iv"] = json!(message_iv);
+            body["iv"] = json!(message_iv);
         }
 
-        // Send the request
-        let response = self
-            .http_client
-            .post(&self.base_url)
-            .query(&[("type", "wirepusher"), ("token", &self.token)])
-            .json(&body)
-            .send()
-            .await?;
+        // Retry loop
+        let mut last_error: Option<Error> = None;
+        for attempt in 0..=self.max_retries {
+            if attempt > 0 {
+                // Exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
+                let delay_secs = std::cmp::min(1u64 << (attempt - 1), Self::MAX_BACKOFF_SECS);
+                tokio::time::sleep(Duration::from_secs(delay_secs)).await;
+            }
 
-        let status = response.status();
+            // Send the request
+            let response = match self
+                .http_client
+                .post(format!("{}/send", self.base_url))
+                .bearer_auth(&self.token)
+                .json(&body)
+                .send()
+                .await
+            {
+                Ok(resp) => resp,
+                Err(e) => {
+                    let error = Error::Request(e);
+                    if error.is_retryable() && attempt < self.max_retries {
+                        last_error = Some(error);
+                        continue;
+                    }
+                    return Err(error);
+                }
+            };
 
-        // Parse error responses
-        if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_default();
-            return Err(self.parse_error_response(status, &error_text));
+            // Parse rate limit headers
+            self.parse_rate_limit_headers(&response);
+
+            let status = response.status();
+
+            // Parse error responses
+            if !status.is_success() {
+                let error_text = response.text().await.unwrap_or_default();
+                let error = self.parse_error_response(status, &error_text);
+
+                if error.is_retryable() && attempt < self.max_retries {
+                    last_error = Some(error);
+                    continue;
+                }
+                return Err(error);
+            }
+
+            // Parse success response
+            let notification_response: NotificationResponse = response.json().await?;
+            return Ok(notification_response);
         }
 
-        // Parse success response
-        let notification_response: NotificationResponse = response.json().await?;
-        Ok(notification_response)
+        // Should not reach here, but return last error if we do
+        Err(last_error.unwrap_or_else(|| Error::Api {
+            message: "Max retries exceeded".to_string(),
+            status_code: 0,
+        }))
+    }
+
+    /// Normalizes tags to match API expectations
+    fn normalize_tags(tags: &[String]) -> Vec<String> {
+        tags.iter()
+            .map(|tag| {
+                tag.trim()
+                    .to_lowercase()
+                    .chars()
+                    .filter(|c| c.is_alphanumeric() || *c == '-' || *c == '_')
+                    .collect::<String>()
+            })
+            .filter(|tag| !tag.is_empty())
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect()
+    }
+
+    /// Parses rate limit headers from response
+    fn parse_rate_limit_headers(&self, response: &reqwest::Response) {
+        let headers = response.headers();
+
+        let limit = headers
+            .get("RateLimit-Limit")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse::<u32>().ok());
+
+        let remaining = headers
+            .get("RateLimit-Remaining")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse::<u32>().ok());
+
+        let reset = headers
+            .get("RateLimit-Reset")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.parse::<u64>().ok());
+
+        if let (Some(limit), Some(remaining), Some(reset)) = (limit, remaining, reset) {
+            let rate_limit_info = RateLimitInfo {
+                limit,
+                remaining,
+                reset,
+            };
+            if let Ok(mut guard) = self.last_rate_limit.write() {
+                *guard = Some(rate_limit_info);
+            }
+        }
+    }
+
+    /// Sends a notification using NotifAI (AI-powered notification generation)
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - Free-form text describing what happened
+    /// * `notification_type` - Optional notification type for categorization
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use wirepusher::Client;
+    ///
+    /// #[tokio::main]
+    /// async fn main() -> Result<(), wirepusher::Error> {
+    ///     let client = Client::new("abc12345")?;
+    ///     let response = client.notifai("deployment finished v2.1.3", None).await?;
+    ///     println!("Generated title: {}", response.notification.title);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn notifai(
+        &self,
+        text: impl Into<String>,
+        notification_type: Option<String>,
+    ) -> Result<crate::response::NotifAIResponse> {
+        let text = text.into();
+
+        // Build the request body
+        let mut body = json!({
+            "text": text,
+        });
+
+        if let Some(t) = notification_type {
+            body["type"] = json!(t);
+        }
+
+        // Retry loop
+        let mut last_error: Option<Error> = None;
+        for attempt in 0..=self.max_retries {
+            if attempt > 0 {
+                let delay_secs = std::cmp::min(1u64 << (attempt - 1), Self::MAX_BACKOFF_SECS);
+                tokio::time::sleep(Duration::from_secs(delay_secs)).await;
+            }
+
+            // Send the request
+            let response = match self
+                .http_client
+                .post(format!("{}/notifai", self.base_url))
+                .bearer_auth(&self.token)
+                .json(&body)
+                .send()
+                .await
+            {
+                Ok(resp) => resp,
+                Err(e) => {
+                    let error = Error::Request(e);
+                    if error.is_retryable() && attempt < self.max_retries {
+                        last_error = Some(error);
+                        continue;
+                    }
+                    return Err(error);
+                }
+            };
+
+            // Parse rate limit headers
+            self.parse_rate_limit_headers(&response);
+
+            let status = response.status();
+
+            if !status.is_success() {
+                let error_text = response.text().await.unwrap_or_default();
+                let error = self.parse_error_response(status, &error_text);
+
+                if error.is_retryable() && attempt < self.max_retries {
+                    last_error = Some(error);
+                    continue;
+                }
+                return Err(error);
+            }
+
+            // Parse success response
+            let notifai_response: crate::response::NotifAIResponse = response.json().await?;
+            return Ok(notifai_response);
+        }
+
+        Err(last_error.unwrap_or_else(|| Error::Api {
+            message: "Max retries exceeded".to_string(),
+            status_code: 0,
+        }))
     }
 
     /// Parses error response with nested error format
@@ -331,42 +551,72 @@ mod tests {
 
     #[test]
     fn test_client_new() {
-        let client = Client::new("abc12345", "test_device_id").unwrap();
+        let client = Client::new("abc12345").unwrap();
         assert_eq!(client.token, "abc12345");
-        assert_eq!(client.device_id, "test_device_id");
         assert_eq!(client.base_url, Client::DEFAULT_BASE_URL);
+        assert_eq!(client.max_retries, Client::DEFAULT_MAX_RETRIES);
     }
 
     #[test]
     fn test_client_with_custom_base_url() {
-        let client =
-            Client::with_base_url("abc12345", "device_id", "https://custom.api.com/send").unwrap();
-        assert_eq!(client.base_url, "https://custom.api.com/send");
+        let client = Client::with_base_url("abc12345", "https://custom.api.com").unwrap();
+        assert_eq!(client.base_url, "https://custom.api.com");
+    }
+
+    #[test]
+    fn test_client_with_config() {
+        let client = Client::with_config("abc12345", 60, 5).unwrap();
+        assert_eq!(client.token, "abc12345");
+        assert_eq!(client.max_retries, 5);
     }
 
     #[test]
     fn test_client_empty_token() {
-        let result = Client::new("", "device_id");
+        let result = Client::new("");
         assert!(result.is_err());
         assert!(matches!(result, Err(Error::InvalidConfig(_))));
     }
 
     #[test]
-    fn test_client_empty_device_id() {
-        let result = Client::new("abc12345", "");
-        assert!(result.is_err());
-        assert!(matches!(result, Err(Error::InvalidConfig(_))));
+    fn test_normalize_tags() {
+        let tags = vec![
+            "  Production  ".to_string(),
+            "BACKEND".to_string(),
+            "test-tag".to_string(),
+            "special@chars!".to_string(),
+            "  ".to_string(), // Empty after trim
+        ];
+
+        let normalized = Client::normalize_tags(&tags);
+
+        assert!(normalized.contains(&"production".to_string()));
+        assert!(normalized.contains(&"backend".to_string()));
+        assert!(normalized.contains(&"test-tag".to_string()));
+        assert!(normalized.contains(&"specialchars".to_string()));
+        assert!(!normalized.iter().any(|t| t.is_empty()));
+    }
+
+    #[test]
+    fn test_normalize_tags_deduplication() {
+        let tags = vec!["test".to_string(), "TEST".to_string(), "Test".to_string()];
+
+        let normalized = Client::normalize_tags(&tags);
+        assert_eq!(normalized.len(), 1);
+        assert!(normalized.contains(&"test".to_string()));
     }
 
     #[test]
     fn test_parse_nested_error_format() {
-        let client = Client::new("token", "device_id").unwrap();
+        let client = Client::new("token").unwrap();
         let nested_error = r#"{"status":"error","error":{"type":"validation_error","code":"invalid_parameter","message":"Title is required","param":"title"}}"#;
         let error = client.parse_error_response(StatusCode::BAD_REQUEST, nested_error);
 
         assert!(error.is_validation_error());
         match error {
-            Error::Validation { message, status_code } => {
+            Error::Validation {
+                message,
+                status_code,
+            } => {
                 assert_eq!(status_code, 400);
                 assert!(message.contains("Title is required"));
                 assert!(message.contains("[invalid_parameter]"));
@@ -378,13 +628,16 @@ mod tests {
 
     #[test]
     fn test_parse_nested_error_without_param() {
-        let client = Client::new("token", "device_id").unwrap();
+        let client = Client::new("token").unwrap();
         let nested_error = r#"{"status":"error","error":{"type":"authentication_error","code":"invalid_token","message":"Token is invalid"}}"#;
         let error = client.parse_error_response(StatusCode::UNAUTHORIZED, nested_error);
 
         assert!(error.is_authentication_error());
         match error {
-            Error::Authentication { message, status_code } => {
+            Error::Authentication {
+                message,
+                status_code,
+            } => {
                 assert_eq!(status_code, 401);
                 assert!(message.contains("Token is invalid"));
                 assert!(message.contains("[invalid_token]"));

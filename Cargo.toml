@@ -1,6 +1,6 @@
 [package]
 name = "wirepusher"
-version = "1.0.0"
+version = "1.0.0-alpha.1"
 edition = "2021"
 authors = ["WirePusher <support@wirepusher.dev>"]
 description = "Official Rust Client Library for WirePusher - Send push notifications with async/await support"
@@ -24,6 +24,7 @@ sha1 = "0.10"
 base64 = "0.22"
 rand = "0.8"
 url = "2.5"
+hex = "0.4"
 
 [dev-dependencies]
 wiremock = "0.5"

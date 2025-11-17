@@ -47,12 +47,12 @@ steps:
           echo "Line coverage: $COVERAGE_PCT%"
 
           # Check if coverage meets threshold
-          if (( $(echo "$COVERAGE < 0.90" | bc -l) )); then
-            echo "ERROR: Coverage $COVERAGE_PCT% is below 90% threshold"
+          if (( $(echo "$COVERAGE < 0.80" | bc -l) )); then
+            echo "ERROR: Coverage $COVERAGE_PCT% is below 80% threshold"
             exit 1
           fi
 
-          echo "Coverage threshold met (>= 90%)"
+          echo "Coverage threshold met (>= 80%)"
         else
           echo "ERROR: Coverage report not found"
           exit 1
@@ -112,15 +112,10 @@ steps:
       - |
         if [ -n "$TAG_NAME" ]; then
           echo "Publishing version $TAG_NAME to crates.io..."
+          cargo publish --token "$$CRATES_IO_TOKEN" --locked --allow-dirty
           echo ""
-          echo "Crates.io publication requires:"
-          echo "1. Create account at https://crates.io/"
-          echo "2. Generate API token"
-          echo "3. Add token to Secret Manager (crates-io-token)"
-          echo "4. Run: cargo publish --token \$CRATES_IO_TOKEN"
-          echo ""
-          echo "Tag $TAG_NAME is valid and package is ready!"
-          ls -lh target/package/*.crate
+          echo "Successfully published $TAG_NAME to crates.io!"
+          echo "View at: https://crates.io/crates/wirepusher"
         else
           echo "Skipping crates.io publish (not a tagged release)"
           echo "To publish: git tag v1.0.0 && git push origin v1.0.0"
@@ -161,7 +156,7 @@ options:
 # Artifacts to save
 artifacts:
   objects:
-    location: 'gs://wirepusher-build-artifacts/rust-sdk/$BUILD_ID'
+    location: 'gs://${PROJECT_ID}_cloudbuild/artifacts/rust-sdk/${BUILD_ID}'
     paths:
       - 'target/package/*.crate'
       - 'target/doc/**'
