@@ -146,7 +146,8 @@ steps:
           -H "Authorization: Bearer $$WIREPUSHER_TOKEN" \
           -H "Content-Type: application/json" \
           -d "{
-            \"text\": \"WirePusher Rust SDK $TAG_NAME released to crates.io successfully. Add wirepusher = version to Cargo.toml. View package at https://crates.io/crates/wirepusher\"
+            \"text\": \"WirePusher Rust SDK $TAG_NAME released to crates.io successfully. Add wirepusher = version to Cargo.toml. View package at https://crates.io/crates/wirepusher\",
+            \"type\": \"release\"
           }"
 
         echo ""
