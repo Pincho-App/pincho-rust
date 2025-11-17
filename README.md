@@ -1,6 +1,5 @@
 # WirePusher Rust Client Library
 
-[![Build Status](https://storage.googleapis.com/wirepusher-app-dev_cloudbuild/badges/wirepusher-rust-main.svg)](https://console.cloud.google.com/cloud-build/builds?project=wirepusher-app-dev)
 [![crates.io](https://img.shields.io/crates/v/wirepusher.svg)](https://crates.io/crates/wirepusher)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
