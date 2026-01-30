@@ -1,26 +1,26 @@
-# WirePusher Rust Client Library
+# Pincho Rust Client Library
 
-[![crates.io](https://img.shields.io/crates/v/wirepusher.svg)](https://crates.io/crates/wirepusher)
+[![crates.io](https://img.shields.io/crates/v/pincho.svg)](https://crates.io/crates/pincho)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Official Rust client for [WirePusher](https://wirepusher.dev) push notifications.
+Official Rust client for [Pincho](https://pincho.app) push notifications.
 
 ## Installation
 
 ```toml
 [dependencies]
-wirepusher = "1.0.0-alpha.2"
+pincho = ">=1.0.0"
 tokio = { version = "1", features = ["full"] }
 ```
 
 ## Quick Start
 
 ```rust
-use wirepusher::Client;
+use pincho::Client;
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
-    // Auto-load token from WIREPUSHER_TOKEN env var
+async fn main() -> Result<(), pincho::Error> {
+    // Auto-load token from PINCHO_TOKEN env var
     let client = Client::from_env()?;
     client.send("Deploy Complete", "Version 1.2.3 deployed").await?;
 
@@ -34,10 +34,10 @@ async fn main() -> Result<(), wirepusher::Error> {
 ## Features
 
 ```rust
-use wirepusher::{Client, Notification};
+use pincho::{Client, Notification};
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
+async fn main() -> Result<(), pincho::Error> {
     let client = Client::from_env()?;
 
     // Full parameters
@@ -74,9 +74,9 @@ async fn main() -> Result<(), wirepusher::Error> {
 
 ```rust
 // Environment variables (recommended)
-// WIREPUSHER_TOKEN - API token (required if not passed to constructor)
-// WIREPUSHER_TIMEOUT - Request timeout in seconds (default: 30)
-// WIREPUSHER_MAX_RETRIES - Retry attempts (default: 3)
+// PINCHO_TOKEN - API token (required if not passed to constructor)
+// PINCHO_TIMEOUT - Request timeout in seconds (default: 30)
+// PINCHO_MAX_RETRIES - Retry attempts (default: 3)
 
 // Or explicit configuration
 let client = Client::with_config("YOUR_TOKEN", 60, 5)?;
@@ -85,7 +85,7 @@ let client = Client::with_config("YOUR_TOKEN", 60, 5)?;
 ## Error Handling
 
 ```rust
-use wirepusher::{Client, Error};
+use pincho::{Client, Error};
 
 #[tokio::main]
 async fn main() {
@@ -129,9 +129,9 @@ if let Some(rate_limit) = client.get_last_rate_limit() {
 ## Links
 
 - **Get Token**: App → Settings → Help → copy token
-- **Documentation**: https://wirepusher.dev/help
-- **Repository**: https://gitlab.com/wirepusher/wirepusher-rust
-- **Crates.io**: https://crates.io/crates/wirepusher
+- **Documentation**: https://pincho.app/help
+- **Repository**: https://gitlab.com/pincho/pincho-rust
+- **Crates.io**: https://crates.io/crates/pincho
 
 ## License
 

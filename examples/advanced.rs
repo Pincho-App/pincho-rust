@@ -1,8 +1,8 @@
-use wirepusher::{Client, Error, Notification};
+use pincho::{Client, Error, Notification};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a WirePusher client from environment
+    // Create a Pincho client from environment
     let client = Client::from_env()?;
 
     // Build a notification with all options
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }) => {
             eprintln!("✗ Authentication error (HTTP {}):", status_code);
             eprintln!("  {}", message);
-            eprintln!("  Check your WIREPUSHER_TOKEN");
+            eprintln!("  Check your PINCHO_TOKEN");
         }
         Err(Error::Validation {
             message,

@@ -21,10 +21,10 @@ Steps to reproduce the behavior:
 ## Minimal Code Example
 
 ```rust
-use wirepusher::Client;
+use pincho::Client;
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
+async fn main() -> Result<(), pincho::Error> {
     // Please provide a minimal, reproducible example
     Ok(())
 }

@@ -1,4 +1,4 @@
-# Contributing to WirePusher Rust Client Library
+# Contributing to Pincho Rust Client Library
 
 Thanks for considering contributing! This is a small project with a small team, so every contribution makes a real difference.
 
@@ -10,8 +10,8 @@ Be respectful and constructive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for
 
 ```bash
 # Get the code
-git clone https://gitlab.com/wirepusher/wirepusher-rust.git
-cd wirepusher-rust
+git clone https://gitlab.com/pincho/pincho-rust.git
+cd pincho-rust
 
 # Build
 cargo build
@@ -31,7 +31,7 @@ cargo clippy -- -D warnings
 
 ### Report a Bug
 
-[Check existing issues](https://gitlab.com/wirepusher/wirepusher-rust/-/issues) first, then create a new one with:
+[Check existing issues](https://gitlab.com/pincho/pincho-rust/-/issues) first, then create a new one with:
 
 - What you did (exact code)
 - What happened vs what you expected
@@ -44,7 +44,7 @@ cargo clippy -- -D warnings
 
 **Code:**
 ```rust
-use wirepusher::{Client, Notification};
+use pincho::{Client, Notification};
 
 let client = Client::from_env().unwrap();
 let notification = Notification::builder()
@@ -167,13 +167,13 @@ On every push to `main`:
 On version tags (`v*.*.*`):
 - All of the above, plus:
 - Publish to crates.io
-- Send notification via WirePusher
+- Send notification via Pincho
 
 ### Infrastructure
 
 CI/CD infrastructure is managed via Terraform in the `frontend` repository:
 - Repository: `frontend/terraform/modules/cloudbuild/main.tf`
-- Secrets: `crates-io-token`, `wirepusher-token` (GCP Secret Manager)
+- Secrets: `crates-io-token`, `pincho-token` (GCP Secret Manager)
 - Triggers: Main branch + release tags
 
 ## Release Process

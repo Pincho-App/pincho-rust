@@ -11,7 +11,7 @@
 
 If you discover a security vulnerability, please report it via email to:
 
-**security@wirepusher.dev**
+**security@pincho.app**
 
 Please include:
 - Description of the vulnerability
@@ -26,7 +26,7 @@ We will respond within 48 hours and work with you to address the issue.
 ### Token Management
 
 - **Never hardcode tokens** in source code
-- Use environment variables: `WIREPUSHER_TOKEN`
+- Use environment variables: `PINCHO_TOKEN`
 - Consider using secret managers in production
 - Rotate tokens periodically
 

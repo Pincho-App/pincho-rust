@@ -1,9 +1,9 @@
 use thiserror::Error;
 
-/// Result type for WirePusher operations
+/// Result type for Pincho operations
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Main error type for the WirePusher Client Library
+/// Main error type for the Pincho Client Library
 #[derive(Error, Debug)]
 pub enum Error {
     /// Authentication failed (401, 403)

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Response from the WirePusher API
+/// Response from the Pincho API
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NotificationResponse {
     /// Response status (e.g., "success")
@@ -53,7 +53,7 @@ pub struct NotifAINotification {
     pub notification_type: Option<String>,
 }
 
-/// Error response from the WirePusher API (nested format)
+/// Error response from the Pincho API (nested format)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ErrorResponse {
     /// Response status (e.g., "error")
@@ -63,7 +63,7 @@ pub struct ErrorResponse {
     pub error: ErrorDetail,
 }
 
-/// Nested error details from the WirePusher API
+/// Nested error details from the Pincho API
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ErrorDetail {
     /// Error type (e.g., "validation_error", "authentication_error")

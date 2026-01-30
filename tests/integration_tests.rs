@@ -1,8 +1,8 @@
+use pincho::{Client, Error, Notification};
 use wiremock::{
     matchers::{header, method, path},
     Mock, MockServer, ResponseTemplate,
 };
-use wirepusher::{Client, Error, Notification};
 
 #[tokio::test]
 async fn test_send_simple_notification_success() {

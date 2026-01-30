@@ -2,7 +2,7 @@ use crate::error::{Error, Result};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-/// A notification to be sent via WirePusher
+/// A notification to be sent via Pincho
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Notification {
     /// Notification title (max 256 characters)

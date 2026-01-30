@@ -5,10 +5,10 @@
 The client automatically parses rate limit headers after each request:
 
 ```rust
-use wirepusher::Client;
+use pincho::Client;
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
+async fn main() -> Result<(), pincho::Error> {
     let client = Client::from_env()?;
     client.send("Test", "Message").await?;
 
@@ -34,7 +34,7 @@ The client automatically retries failed requests with exponential backoff:
 - **Retryable errors**: Rate limits (429), server errors (5xx), network errors
 - **Non-retryable**: Authentication (401/403), validation (400/404)
 - **Backoff**: 1s, 2s, 4s, 8s... capped at 30 seconds
-- **Default retries**: 3 (configurable via `WIREPUSHER_MAX_RETRIES` or `with_config`)
+- **Default retries**: 3 (configurable via `PINCHO_MAX_RETRIES` or `with_config`)
 
 ```rust
 // Configure retries
@@ -55,10 +55,10 @@ match client.send("Test", "Message").await {
 Messages can be encrypted using AES-128-CBC. Only the message field is encrypted:
 
 ```rust
-use wirepusher::{Client, Notification};
+use pincho::{Client, Notification};
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
+async fn main() -> Result<(), pincho::Error> {
     let client = Client::from_env()?;
 
     let notification = Notification::builder()
@@ -84,7 +84,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 The client uses reqwest with connection pooling and HTTP/2 support by default:
 
 ```rust
-use wirepusher::Client;
+use pincho::Client;
 
 // Custom timeout
 let client = Client::with_config("token", 60, 3)?; // 60 second timeout
@@ -121,11 +121,11 @@ let notification = Notification::builder()
 The client is `Send + Sync` and can be cloned for concurrent use:
 
 ```rust
-use wirepusher::Client;
+use pincho::Client;
 use futures::future::join_all;
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
+async fn main() -> Result<(), pincho::Error> {
     let client = Client::from_env()?;
 
     let futures: Vec<_> = (0..10)
@@ -149,7 +149,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 ## Error Handling Best Practices
 
 ```rust
-use wirepusher::{Client, Error};
+use pincho::{Client, Error};
 
 async fn send_with_handling(client: &Client) {
     match client.send("Test", "Message").await {

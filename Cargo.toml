@@ -1,15 +1,15 @@
 [package]
-name = "wirepusher"
-version = "1.0.0-alpha.2"
+name = "pincho"
+version = "1.0.0-alpha.1"
 edition = "2021"
-authors = ["WirePusher <support@wirepusher.dev>"]
-description = "Official Rust Client Library for WirePusher - Send push notifications with async/await support"
+authors = ["Pincho <support@pincho.app>"]
+description = "Official Rust Client Library for Pincho - Send push notifications with async/await support"
 license = "MIT"
-repository = "https://gitlab.com/wirepusher/wirepusher-rust"
-homepage = "https://wirepusher.dev"
-documentation = "https://docs.rs/wirepusher"
+repository = "https://gitlab.com/pincho-app/pincho-rust"
+homepage = "https://pincho.app"
+documentation = "https://docs.rs/pincho"
 readme = "README.md"
-keywords = ["push", "notifications", "wirepusher", "async", "api"]
+keywords = ["push", "notifications", "pincho", "async", "api"]
 categories = ["api-bindings", "asynchronous", "web-programming"]
 
 [dependencies]

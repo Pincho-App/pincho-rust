@@ -1,8 +1,8 @@
-# CLAUDE.md - WirePusher Rust Client Library
+# CLAUDE.md - Pincho Rust Client Library
 
 ## Overview
 
-Rust client for WirePusher push notifications. Rust 2021+, reqwest + tokio, async/await.
+Rust client for Pincho push notifications. Rust 2021+, reqwest + tokio, async/await.
 
 ## Structure
 
@@ -19,7 +19,7 @@ src/
 ## API
 
 ```rust
-let client = Client::from_env()?;           // From WIREPUSHER_TOKEN
+let client = Client::from_env()?;           // From PINCHO_TOKEN
 let client = Client::new("TOKEN")?;         // Explicit token
 let client = Client::with_config("TOKEN", timeout, max_retries)?;
 
@@ -47,7 +47,7 @@ All have `is_retryable()` method.
 
 ## Config
 
-Env vars: `WIREPUSHER_TOKEN`, `WIREPUSHER_TIMEOUT`, `WIREPUSHER_MAX_RETRIES`
+Env vars: `PINCHO_TOKEN`, `PINCHO_TIMEOUT`, `PINCHO_MAX_RETRIES`
 
 ## Development
 
@@ -66,4 +66,4 @@ cargo clippy              # Lint
 - Tag normalization (lowercase, trim, dedupe, filter invalid chars)
 - Encryption: AES-128-CBC with hex IV field
 - Rate limit headers: `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`
-- User-Agent: `wirepusher-rust/{version}`
+- User-Agent: `pincho-rust/{version}`

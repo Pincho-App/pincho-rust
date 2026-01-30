@@ -1,4 +1,4 @@
-# CI/CD Setup Guide for WirePusher Rust SDK
+# CI/CD Setup Guide for Pincho Rust SDK
 
 This guide covers the Google Cloud Build pipeline for automated testing and publishing to crates.io.
 
@@ -7,9 +7,9 @@ This guide covers the Google Cloud Build pipeline for automated testing and publ
 The CI/CD infrastructure is managed via Terraform in the `frontend` repository:
 
 - **Location**: `frontend/terraform/modules/cloudbuild/main.tf`
-- **Repository link**: wirepusher-rust → GitLab
+- **Repository link**: pincho-rust → GitLab
 - **Triggers**: Main branch (CI) + Release tags (publish)
-- **Secrets**: `crates-io-token` and `wirepusher-token` access configured
+- **Secrets**: `crates-io-token` and `pincho-token` access configured
 
 No manual setup required - just push code!
 
@@ -20,7 +20,7 @@ Push to main:
   fetch → build → test → coverage (80%) → clippy → fmt → docs → package
 
 Push v*.*.* tag:
-  ... same as above ... → publish to crates.io → WirePusher notification
+  ... same as above ... → publish to crates.io → Pincho notification
 ```
 
 ## Testing Locally
@@ -77,7 +77,7 @@ docker run --rm -v "$(pwd)":/app -w /app rust:1.83 bash -c "
 Cloud Build will automatically:
 - Run all tests and checks
 - Publish to crates.io
-- Send a notification via WirePusher
+- Send a notification via Pincho
 
 ## Troubleshooting
 

@@ -1,9 +1,9 @@
-use wirepusher::Client;
+use pincho::Client;
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
-    // Create a WirePusher client from environment
-    // Reads WIREPUSHER_TOKEN from environment
+async fn main() -> Result<(), pincho::Error> {
+    // Create a Pincho client from environment
+    // Reads PINCHO_TOKEN from environment
     let client = Client::from_env()?;
 
     // Or provide token explicitly:

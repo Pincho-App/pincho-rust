@@ -16,10 +16,10 @@ Example: I'm always frustrated when [...] -->
 <!-- Show how you envision using this feature -->
 
 ```rust
-use wirepusher::Client;
+use pincho::Client;
 
 #[tokio::main]
-async fn main() -> Result<(), wirepusher::Error> {
+async fn main() -> Result<(), pincho::Error> {
     // Example of proposed API usage
     Ok(())
 }
@@ -35,7 +35,7 @@ async fn main() -> Result<(), wirepusher::Error> {
 
 ## Benefits
 
-<!-- How would this feature benefit WirePusher library users? -->
+<!-- How would this feature benefit Pincho library users? -->
 
 - Benefit 1
 - Benefit 2

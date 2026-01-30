@@ -11,7 +11,7 @@ We release patches for security vulnerabilities in the following versions:
 
 ## Reporting a Vulnerability
 
-The WirePusher team takes security bugs seriously. We appreciate your efforts to responsibly disclose your findings.
+The Pincho team takes security bugs seriously. We appreciate your efforts to responsibly disclose your findings.
 
 ### How to Report
 
@@ -19,7 +19,7 @@ The WirePusher team takes security bugs seriously. We appreciate your efforts to
 
 Instead, please report security vulnerabilities via email to:
 
-**security@wirepusher.com**
+**security@pincho.app**
 
 ### What to Include
 
@@ -53,7 +53,7 @@ After you submit a report:
 
 ### For Users
 
-When using the WirePusher Rust Client Library:
+When using the Pincho Rust Client Library:
 
 1. **Keep the SDK updated** to the latest version
 2. **Never commit credentials** to version control
@@ -71,8 +71,8 @@ let client = Client::new("abc12345", "device_id")?;
 
 // ✅ Good - Environment variables
 use std::env;
-let token = env::var("WIREPUSHER_TOKEN")?;
-let device_id = env::var("WIREPUSHER_DEVICE_ID")?;
+let token = env::var("PINCHO_TOKEN")?;
+let device_id = env::var("PINCHO_DEVICE_ID")?;
 let client = Client::new(token, device_id)?;
 ```
 
@@ -147,7 +147,7 @@ timeout(
 
 ### Network Communication
 
-- All communication with WirePusher API is over HTTPS
+- All communication with Pincho API is over HTTPS
 - The SDK uses reqwest which respects system-level TLS/SSL settings
 - Certificate validation is handled by the Rust runtime
 - Minimum TLS 1.2 is enforced by default
@@ -211,7 +211,7 @@ We thank the following individuals for responsibly disclosing security vulnerabi
 
 For security-related questions that aren't reporting vulnerabilities:
 
-- Email: security@wirepusher.com
-- General questions: support@wirepusher.com
+- Email: security@pincho.app
+- General questions: support@pincho.app
 
-Thank you for helping keep WirePusher and its users safe!
+Thank you for helping keep Pincho and its users safe!

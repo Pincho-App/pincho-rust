@@ -1,6 +1,6 @@
-//! # WirePusher Rust Client Library
+//! # Pincho Rust Client Library
 //!
-//! Official Rust Client Library for [WirePusher](https://wirepusher.dev) - Send push notifications to your mobile devices.
+//! Official Rust Client Library for [Pincho](https://pincho.app) - Send push notifications to your mobile devices.
 //!
 //! ## Features
 //!
@@ -14,10 +14,10 @@
 //! ## Quick Start
 //!
 //! ```no_run
-//! use wirepusher::Client;
+//! use pincho::Client;
 //!
 //! #[tokio::main]
-//! async fn main() -> Result<(), wirepusher::Error> {
+//! async fn main() -> Result<(), pincho::Error> {
 //!     let client = Client::new("abc12345")?;
 //!
 //!     // Send a simple notification
@@ -34,10 +34,10 @@
 //! ## Advanced Usage
 //!
 //! ```no_run
-//! use wirepusher::{Client, Notification};
+//! use pincho::{Client, Notification};
 //!
 //! #[tokio::main]
-//! async fn main() -> Result<(), wirepusher::Error> {
+//! async fn main() -> Result<(), pincho::Error> {
 //!     let client = Client::new("abc12345")?;
 //!
 //!     // Build a notification with all options
@@ -60,7 +60,7 @@
 //! ## Error Handling
 //!
 //! ```no_run
-//! use wirepusher::{Client, Error};
+//! use pincho::{Client, Error};
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -89,10 +89,10 @@
 //!
 //! ## Links
 //!
-//! - [WirePusher Website](https://wirepusher.dev)
-//! - [API Documentation](https://wirepusher.dev/api)
-//! - [GitLab Repository](https://gitlab.com/wirepusher/wirepusher-rust)
-//! - [Issue Tracker](https://gitlab.com/wirepusher/wirepusher-rust/-/issues)
+//! - [Pincho Website](https://pincho.app)
+//! - [API Documentation](https://pincho.app/api)
+//! - [GitLab Repository](https://gitlab.com/pincho/pincho-rust)
+//! - [Issue Tracker](https://gitlab.com/pincho/pincho-rust/-/issues)
 
 // Module declarations
 mod client;

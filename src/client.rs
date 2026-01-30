@@ -6,7 +6,7 @@ use serde_json::json;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-/// WirePusher API client
+/// Pincho API client
 ///
 /// The client is thread-safe and reuses HTTP connections via connection pooling.
 /// It's recommended to create a single client instance and reuse it across your application.
@@ -14,10 +14,10 @@ use std::time::Duration;
 /// # Examples
 ///
 /// ```no_run
-/// use wirepusher::Client;
+/// use pincho::Client;
 ///
 /// #[tokio::main]
-/// async fn main() -> Result<(), wirepusher::Error> {
+/// async fn main() -> Result<(), pincho::Error> {
 ///     let client = Client::new("abc12345")?;
 ///     let response = client.send("Hello", "World!").await?;
 ///     println!("Status: {}", response.status);
@@ -35,7 +35,7 @@ pub struct Client {
 
 impl Client {
     /// Default API base URL
-    const DEFAULT_BASE_URL: &'static str = "https://api.wirepusher.dev";
+    const DEFAULT_BASE_URL: &'static str = "https://api.pincho.app";
     /// Default timeout in seconds
     const DEFAULT_TIMEOUT: u64 = 30;
     /// Default max retries
@@ -45,17 +45,17 @@ impl Client {
     /// Library version
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    /// Creates a new WirePusher client
+    /// Creates a new Pincho client
     ///
     /// # Arguments
     ///
-    /// * `token` - Your WirePusher API token (Bearer token)
+    /// * `token` - Your Pincho API token (Bearer token)
     ///
     /// # Environment Variables
     ///
-    /// - `WIREPUSHER_TOKEN` - Default token if not provided
-    /// - `WIREPUSHER_TIMEOUT` - Request timeout in seconds (default: 30)
-    /// - `WIREPUSHER_MAX_RETRIES` - Max retry attempts (default: 3)
+    /// - `PINCHO_TOKEN` - Default token if not provided
+    /// - `PINCHO_TIMEOUT` - Request timeout in seconds (default: 30)
+    /// - `PINCHO_MAX_RETRIES` - Max retry attempts (default: 3)
     ///
     /// # Errors
     ///
@@ -66,9 +66,9 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// use wirepusher::Client;
+    /// use pincho::Client;
     ///
-    /// # fn main() -> Result<(), wirepusher::Error> {
+    /// # fn main() -> Result<(), pincho::Error> {
     /// let client = Client::new("abc12345")?;
     /// # Ok(())
     /// # }
@@ -80,19 +80,19 @@ impl Client {
             return Err(Error::InvalidConfig("token cannot be empty".to_string()));
         }
 
-        let timeout = std::env::var("WIREPUSHER_TIMEOUT")
+        let timeout = std::env::var("PINCHO_TIMEOUT")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .unwrap_or(Self::DEFAULT_TIMEOUT);
 
-        let max_retries = std::env::var("WIREPUSHER_MAX_RETRIES")
+        let max_retries = std::env::var("PINCHO_MAX_RETRIES")
             .ok()
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(Self::DEFAULT_MAX_RETRIES);
 
         let http_client = reqwest::Client::builder()
             .timeout(Duration::from_secs(timeout))
-            .user_agent(format!("wirepusher-rust/{}", Self::VERSION))
+            .user_agent(format!("pincho-rust/{}", Self::VERSION))
             .build()
             .map_err(Error::Request)?;
 
@@ -107,14 +107,14 @@ impl Client {
 
     /// Creates a client from environment variables
     ///
-    /// Reads `WIREPUSHER_TOKEN` from environment.
+    /// Reads `PINCHO_TOKEN` from environment.
     ///
     /// # Errors
     ///
-    /// Returns an error if `WIREPUSHER_TOKEN` is not set or empty.
+    /// Returns an error if `PINCHO_TOKEN` is not set or empty.
     pub fn from_env() -> Result<Self> {
-        let token = std::env::var("WIREPUSHER_TOKEN")
-            .map_err(|_| Error::InvalidConfig("WIREPUSHER_TOKEN not set".to_string()))?;
+        let token = std::env::var("PINCHO_TOKEN")
+            .map_err(|_| Error::InvalidConfig("PINCHO_TOKEN not set".to_string()))?;
         Self::new(token)
     }
 
@@ -122,7 +122,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `token` - Your WirePusher API token
+    /// * `token` - Your Pincho API token
     /// * `timeout` - Request timeout in seconds
     /// * `max_retries` - Maximum retry attempts for retryable errors
     pub fn with_config(token: impl Into<String>, timeout: u64, max_retries: u32) -> Result<Self> {
@@ -134,7 +134,7 @@ impl Client {
 
         let http_client = reqwest::Client::builder()
             .timeout(Duration::from_secs(timeout))
-            .user_agent(format!("wirepusher-rust/{}", Self::VERSION))
+            .user_agent(format!("pincho-rust/{}", Self::VERSION))
             .build()
             .map_err(Error::Request)?;
 
@@ -151,7 +151,7 @@ impl Client {
     ///
     /// # Arguments
     ///
-    /// * `token` - Your WirePusher API token
+    /// * `token` - Your Pincho API token
     /// * `base_url` - Custom base URL for the API
     pub fn with_base_url(token: impl Into<String>, base_url: impl Into<String>) -> Result<Self> {
         let mut client = Self::new(token)?;
@@ -194,10 +194,10 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// use wirepusher::Client;
+    /// use pincho::Client;
     ///
     /// #[tokio::main]
-    /// async fn main() -> Result<(), wirepusher::Error> {
+    /// async fn main() -> Result<(), pincho::Error> {
     ///     let client = Client::new("abc12345")?;
     ///     let response = client.send("Build Complete", "v1.2.3 deployed").await?;
     ///     assert!(response.is_success());
@@ -229,10 +229,10 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// use wirepusher::{Client, Notification};
+    /// use pincho::{Client, Notification};
     ///
     /// #[tokio::main]
-    /// async fn main() -> Result<(), wirepusher::Error> {
+    /// async fn main() -> Result<(), pincho::Error> {
     ///     let client = Client::new("abc12345")?;
     ///
     ///     let notification = Notification::builder()
@@ -412,10 +412,10 @@ impl Client {
     /// # Examples
     ///
     /// ```no_run
-    /// use wirepusher::Client;
+    /// use pincho::Client;
     ///
     /// #[tokio::main]
-    /// async fn main() -> Result<(), wirepusher::Error> {
+    /// async fn main() -> Result<(), pincho::Error> {
     ///     let client = Client::new("abc12345")?;
     ///     let response = client.notifai("deployment finished v2.1.3", None).await?;
     ///     println!("Generated title: {}", response.notification.title);
