@@ -257,26 +257,53 @@ impl Client {
         }
 
         // Handle encryption if password is set
-        let message = if let Some(ref password) = notification.encryption_password {
-            // Generate random IV
-            use rand::Rng;
-            let mut iv = [0u8; 16];
-            rand::thread_rng().fill(&mut iv);
+        // Encrypted fields: title, message, image_url, action_url
+        // NOT encrypted: type, tags (needed for filtering/routing)
+        let (title, message, image_url, action_url, iv_hex) =
+            if let Some(ref password) = notification.encryption_password {
+                // Generate random IV
+                use rand::Rng;
+                let mut iv = [0u8; 16];
+                rand::thread_rng().fill(&mut iv);
 
-            // Encrypt the message
-            let encrypted = crate::encryption::encrypt_text(&notification.message, password, &iv)?;
+                // Encrypt all sensitive fields with the same IV
+                let encrypted_title =
+                    crate::encryption::encrypt_text(&notification.title, password, &iv)?;
+                let encrypted_message =
+                    crate::encryption::encrypt_text(&notification.message, password, &iv)?;
 
-            // Store IV as hex (matching other SDKs)
-            notification.message_iv = Some(hex::encode(iv));
+                let encrypted_image_url = if let Some(ref url) = notification.image_url {
+                    Some(crate::encryption::encrypt_text(url, password, &iv)?)
+                } else {
+                    None
+                };
 
-            encrypted
-        } else {
-            notification.message.clone()
-        };
+                let encrypted_action_url = if let Some(ref url) = notification.action_url {
+                    Some(crate::encryption::encrypt_text(url, password, &iv)?)
+                } else {
+                    None
+                };
+
+                (
+                    encrypted_title,
+                    encrypted_message,
+                    encrypted_image_url,
+                    encrypted_action_url,
+                    Some(hex::encode(iv)),
+                )
+            } else {
+                (
+                    notification.title.clone(),
+                    notification.message.clone(),
+                    notification.image_url.clone(),
+                    notification.action_url.clone(),
+                    None,
+                )
+            };
 
         // Build the request body with camelCase field names
         let mut body = json!({
-            "title": notification.title,
+            "title": title,
             "message": message,
         });
 
@@ -287,14 +314,14 @@ impl Client {
         if let Some(tags) = notification.tags {
             body["tags"] = json!(tags);
         }
-        if let Some(image_url) = notification.image_url {
-            body["imageURL"] = json!(image_url);
+        if let Some(url) = image_url {
+            body["imageURL"] = json!(url);
         }
-        if let Some(action_url) = notification.action_url {
-            body["actionURL"] = json!(action_url);
+        if let Some(url) = action_url {
+            body["actionURL"] = json!(url);
         }
-        if let Some(message_iv) = notification.message_iv {
-            body["iv"] = json!(message_iv);
+        if let Some(iv) = iv_hex {
+            body["iv"] = json!(iv);
         }
 
         // Retry loop

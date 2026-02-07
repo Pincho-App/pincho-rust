@@ -30,7 +30,8 @@ pub struct Notification {
     #[serde(rename = "action_url")]
     pub action_url: Option<String>,
 
-    /// Encryption password (optional, will encrypt message field only)
+    /// Encryption password (optional). When set, encrypts title, message, image_url, action_url.
+    /// Type and tags remain unencrypted for filtering/routing.
     #[serde(skip_serializing)]
     pub(crate) encryption_password: Option<String>,
 
@@ -116,16 +117,15 @@ impl NotificationBuilder {
         self
     }
 
-    /// Sets the encryption password (will encrypt message field only)
+    /// Sets the encryption password.
     ///
-    /// When set, the message will be encrypted using AES-128-CBC with:
+    /// When set, title, message, image_url, and action_url are encrypted using AES-128-CBC with:
     /// - SHA1-based key derivation
-    /// - Random 16-byte IV per message
+    /// - Random 16-byte IV per notification (same IV for all fields)
     /// - Custom Base64 encoding (+ → -, / → ., = → _)
     /// - PKCS7 padding
     ///
-    /// Note: Only the message field is encrypted. Title, type, imageURL,
-    /// actionURL, and tags remain unencrypted.
+    /// Type and tags remain unencrypted for filtering/routing.
     pub fn encryption_password(mut self, password: impl Into<String>) -> Self {
         self.encryption_password = Some(password.into());
         self
