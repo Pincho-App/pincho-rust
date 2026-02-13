@@ -56,5 +56,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - tokio-test 0.4 (testing utilities)
 - futures 0.3 (concurrent testing)
 
-[Unreleased]: https://gitlab.com/pincho-app/pincho-rust/-/compare/v1.0.0-alpha.1...main
-[1.0.0-alpha.1]: https://gitlab.com/pincho-app/pincho-rust/-/tags/v1.0.0-alpha.1
+[Unreleased]: https://github.com/Pincho-App/pincho-rust/compare/v1.0.0-alpha.1...main
+[1.0.0-alpha.1]: https://github.com/Pincho-App/pincho-rust/releases/tag/v1.0.0-alpha.1

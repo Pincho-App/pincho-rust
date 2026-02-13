@@ -10,7 +10,7 @@ Be respectful and constructive. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for
 
 ```bash
 # Get the code
-git clone https://gitlab.com/pincho/pincho-rust.git
+git clone https://github.com/Pincho-App/pincho-rust.git
 cd pincho-rust
 
 # Build
@@ -31,7 +31,7 @@ cargo clippy -- -D warnings
 
 ### Report a Bug
 
-[Check existing issues](https://gitlab.com/pincho/pincho-rust/-/issues) first, then create a new one with:
+[Check existing issues](https://github.com/Pincho-App/pincho-rust/issues) first, then create a new one with:
 
 - What you did (exact code)
 - What happened vs what you expected
@@ -80,7 +80,7 @@ Create an issue explaining:
 6. **Format**: `cargo fmt && cargo clippy -- -D warnings`
 7. **Commit** with a clear message
 8. **Push** to your fork
-9. **Open a Merge Request**
+9. **Open a Pull Request**
 
 ## Code Guidelines
 
@@ -150,31 +150,24 @@ cargo test && cargo fmt -- --check && cargo clippy -- -D warnings
 
 ## CI/CD Pipeline
 
-This project uses Google Cloud Build for automated testing and releases.
+This project uses GitHub Actions for automated testing and releases.
 
 ### Pipeline Steps
 
-On every push to `main`:
-1. Fetch dependencies
-2. Build release binary
-3. Run test suite (59 tests)
-4. Check code coverage (80% threshold)
-5. Run clippy linter
-6. Check formatting
-7. Build documentation
-8. Package crate
+On every push to `main` and pull requests:
+1. Lint (cargo fmt, cargo clippy)
+2. Run test suite
+3. Build release binary, docs, and package crate
 
-On version tags (`v*.*.*`):
+On version tags (`v*`):
 - All of the above, plus:
 - Publish to crates.io
-- Send notification via Pincho
+- Send release notification via Pincho
 
 ### Infrastructure
 
-CI/CD infrastructure is managed via Terraform in the `frontend` repository:
-- Repository: `frontend/terraform/modules/cloudbuild/main.tf`
-- Secrets: `crates-io-token`, `pincho-token` (GCP Secret Manager)
-- Triggers: Main branch + release tags
+CI/CD is configured in `.github/workflows/ci.yml`.
+- Secrets: `CRATES_IO_TOKEN`, `PINCHO_TOKEN` (GitHub repository secrets)
 
 ## Release Process
 
@@ -193,7 +186,7 @@ CI/CD infrastructure is managed via Terraform in the `frontend` repository:
    git push origin main --tags
    ```
 
-Cloud Build automatically publishes to crates.io on tag push.
+GitHub Actions automatically publishes to crates.io on tag push.
 
 ### Version Numbering
 
@@ -208,7 +201,7 @@ Pre-release versions: `X.Y.Z-alpha.N`, `X.Y.Z-beta.N`, `X.Y.Z-rc.N`
 
 - **Architecture questions?** See [CLAUDE.md](CLAUDE.md)
 - **CI/CD setup?** See [docs/CI_CD_SETUP.md](docs/CI_CD_SETUP.md)
-- **Stuck?** Open an issue or ask in your MR
+- **Stuck?** Open an issue or ask in your PR
 
 ## License
 

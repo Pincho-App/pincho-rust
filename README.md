@@ -130,7 +130,7 @@ if let Some(rate_limit) = client.get_last_rate_limit() {
 
 - **Get Token**: App → Settings → Help → copy token
 - **Documentation**: https://pincho.app/help
-- **Repository**: https://gitlab.com/pincho/pincho-rust
+- **Repository**: https://github.com/Pincho-App/pincho-rust
 - **Crates.io**: https://crates.io/crates/pincho
 
 ## License

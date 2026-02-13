@@ -91,8 +91,8 @@
 //!
 //! - [Pincho Website](https://pincho.app)
 //! - [API Documentation](https://pincho.app/api)
-//! - [GitLab Repository](https://gitlab.com/pincho/pincho-rust)
-//! - [Issue Tracker](https://gitlab.com/pincho/pincho-rust/-/issues)
+//! - [GitHub Repository](https://github.com/Pincho-App/pincho-rust)
+//! - [Issue Tracker](https://github.com/Pincho-App/pincho-rust/issues)
 
 // Module declarations
 mod client;
